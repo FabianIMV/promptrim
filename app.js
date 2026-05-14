@@ -272,7 +272,7 @@ async function aiCompress(text, level, apiKey) {
     return output;
   }
 
-  throw new Error(errors[errors.length - 1] || 'Gemini request failed for all configured models.');
+  throw new Error(errors.length ? errors.join(' | ') : 'Gemini request failed for all configured models.');
 }
 
 // ─── Show/hide savings ────────────────────────────────────────────────────────
