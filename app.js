@@ -228,7 +228,7 @@ const SYSTEM_PROMPTS = {
 };
 
 async function aiCompress(text, level, apiKey) {
-  const models = ['gemini-3.1-flash', 'gemini-3.1-pro'];
+  const models = await getGeminiModels(apiKey);
   const errors = [];
 
   for (const model of models) {
@@ -273,6 +273,29 @@ async function aiCompress(text, level, apiKey) {
   }
 
   throw new Error(errors.length ? errors.join(' | ') : 'Gemini request failed for all configured models.');
+}
+
+async function getGeminiModels(apiKey) {
+  // Prefer current stable/preview text models commonly available for generateContent.
+  const preferred = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'];
+  try {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+    if (!resp.ok) return preferred;
+
+    const data = await resp.json();
+    const available = (data?.models || [])
+      .filter(m => (m?.supportedGenerationMethods || []).includes('generateContent'))
+      .map(m => (m?.name || '').replace(/^models\//, ''))
+      .filter(Boolean);
+
+    if (!available.length) return preferred;
+
+    const preferredAvailable = preferred.filter(model => available.includes(model));
+    const extraAvailable = available.filter(model => !preferred.includes(model));
+    return [...preferredAvailable, ...extraAvailable];
+  } catch {
+    return preferred;
+  }
 }
 
 // ─── Show/hide savings ────────────────────────────────────────────────────────
