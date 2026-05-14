@@ -9,7 +9,17 @@ const state = {
 
 const STORAGE_KEYS = {
   aiMode: 'promptrim.aiMode',
-  apiKey: 'promptrim.apiKey',
+};
+const GEMINI_REQUEST_TIMEOUT_MS = 25_000;
+
+const GEMINI_STATUS_MESSAGES = {
+  400: 'Bad request sent to Gemini API.',
+  401: 'Invalid Gemini API key.',
+  403: 'Gemini API access denied for this key/project.',
+  404: 'Gemini model not available.',
+  429: 'Gemini API rate limit reached. Try again in a moment.',
+  500: 'Gemini service error. Please retry shortly.',
+  503: 'Gemini service temporarily unavailable.',
 };
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
@@ -67,7 +77,6 @@ apiToggle.addEventListener('change', () => {
 
 apiKeyInput.addEventListener('input', () => {
   state.apiKey = apiKeyInput.value.trim();
-  localStorage.setItem(STORAGE_KEYS.apiKey, state.apiKey);
 });
 
 // ─── Input listener ───────────────────────────────────────────────────────────
@@ -239,50 +248,59 @@ async function aiCompress(text, level, apiKey) {
   const errors = [];
 
   for (const model of models) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 25_000);
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPTS[level] }] },
-        generationConfig: { maxOutputTokens: 2048 },
-        contents: [{ role: 'user', parts: [{ text }] }],
-      }),
-      signal: controller.signal,
-    }).finally(() => clearTimeout(timeoutId));
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), GEMINI_REQUEST_TIMEOUT_MS);
+      const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM_PROMPTS[level] }] },
+          generationConfig: { maxOutputTokens: 2048 },
+          contents: [{ role: 'user', parts: [{ text }] }],
+        }),
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeoutId));
 
-    if (!resp.ok) {
-      const err = await parseGeminiError(resp);
-      errors.push(`${model}: ${err}`);
-      continue;
-    }
+      if (!resp.ok) {
+        const err = await parseGeminiError(resp);
+        errors.push({ model, message: err });
+        continue;
+      }
 
-    const data = await resp.json();
-    const blockedReason = data?.promptFeedback?.blockReason;
-    if (blockedReason) {
-      const blockedMsg = data?.promptFeedback?.blockReasonMessage;
-      errors.push(`${model}: ${blockedMsg || `Gemini blocked the request (${blockedReason}).`}`);
-      continue;
-    }
-    const firstCandidate = data.candidates?.[0];
-    const output = firstCandidate?.content?.parts?.map(p => p?.text || '').join('').trim();
-    if (!output) {
-      const finishReason = firstCandidate?.finishReason;
-      if (finishReason) {
-        errors.push(`${model}: Gemini did not return text (finish reason: ${finishReason}).`);
+      const data = await resp.json();
+      const blockedReason = data?.promptFeedback?.blockReason;
+      if (blockedReason) {
+        const blockedMsg = data?.promptFeedback?.blockReasonMessage;
+        errors.push({ model, message: blockedMsg || `Gemini blocked the request (${blockedReason}).` });
+        continue;
+      }
+      const firstCandidate = data.candidates?.[0];
+      const output = firstCandidate?.content?.parts?.map(p => p?.text || '').join('').trim();
+      if (!output) {
+        const finishReason = firstCandidate?.finishReason;
+        if (finishReason) {
+          errors.push({ model, message: `Gemini did not return text (finish reason: ${finishReason}).` });
+        } else {
+          errors.push({ model, message: 'Gemini returned no text. Check your key, prompt content, and model availability.' });
+        }
+        continue;
+      }
+      return output;
+    } catch (err) {
+      if (err?.name === 'AbortError') {
+        errors.push({ model, message: `Gemini API request timed out after ${Math.round(GEMINI_REQUEST_TIMEOUT_MS / 1000)} seconds.` });
       } else {
-        errors.push(`${model}: Gemini returned no text. Check your key, prompt content, and model availability.`);
+        errors.push({ model, message: 'Network error calling Gemini API. Please check your connection and try again.' });
       }
       continue;
     }
-    return output;
   }
 
-  throw new Error(errors.length ? errors.join(' | ') : 'Gemini request failed for all configured models.');
+  throw new Error(formatGeminiFailure(errors));
 }
 
 async function getGeminiModels(apiKey) {
@@ -340,23 +358,22 @@ async function getGeminiModels(apiKey) {
 
 async function parseGeminiError(resp) {
   const status = resp.status;
-  const statusMessage = {
-    400: 'Bad request sent to Gemini API.',
-    401: 'Invalid Gemini API key.',
-    403: 'Gemini API access denied for this key/project.',
-    404: 'Gemini model not available.',
-    429: 'Gemini API rate limit reached. Try again in a moment.',
-    500: 'Gemini service error. Please retry shortly.',
-    503: 'Gemini service temporarily unavailable.',
-  };
-
-  const fallback = statusMessage[status] || `API error ${status}`;
+  const fallback = GEMINI_STATUS_MESSAGES[status] || `API error ${status}`;
   try {
     const json = await resp.json();
     return json?.error?.message || fallback;
   } catch {
     return fallback;
   }
+}
+
+function formatGeminiFailure(errors) {
+  if (!errors.length) return 'Gemini request failed for all configured models.';
+
+  const uniqueMessages = [...new Set(errors.map(e => e.message))];
+  if (uniqueMessages.length === 1) return uniqueMessages[0];
+
+  return errors.map(e => `${e.model}: ${e.message}`).join(' | ');
 }
 
 // ─── Show/hide savings ────────────────────────────────────────────────────────
@@ -462,17 +479,11 @@ clearBtn.addEventListener('click', () => {
 // ─── Init ─────────────────────────────────────────────────────────────────────
 (() => {
   const savedAiMode = localStorage.getItem(STORAGE_KEYS.aiMode);
-  const savedApiKey = localStorage.getItem(STORAGE_KEYS.apiKey) || '';
 
   if (savedAiMode === 'true') {
     state.aiMode = true;
     apiToggle.checked = true;
     apiKeyWrap.classList.add('visible');
-  }
-
-  if (savedApiKey) {
-    state.apiKey = savedApiKey;
-    apiKeyInput.value = savedApiKey;
   }
 })();
 
