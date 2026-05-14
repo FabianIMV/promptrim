@@ -83,74 +83,161 @@ inputArea.addEventListener('input', () => {
   hideSavings();
 });
 
-// ─── Fast (rule-based) compression ────────────────────────────────────────────
-const FILLERS = [
-  // Opening fluff
-  /\b(please|kindly|i would like you to|i want you to|could you please|can you please|i need you to|feel free to)\b/gi,
-  // Meta-instructions
-  /\b(your task is to|your job is to|your role is to|as an? (ai|assistant|language model|llm),?)\b/gi,
-  // Padding adverbs/adjectives
-  /\b(very|really|extremely|quite|rather|fairly|somewhat|totally|absolutely|definitely|certainly|essentially|basically|generally|typically|usually|normally|always|often)\b/gi,
-  // Verbose connectors
-  /\b(in order to|so as to|for the purpose of|with the aim of|with the goal of)\b/gi,
-  // Redundant phrases
-  /\b(it is important to note that|it should be noted that|note that|please note that|keep in mind that|bear in mind that|as (you|we) know)\b/gi,
-  // End padding
-  /\b(make sure to|ensure that|be sure to)\b/gi,
-  // Verbose structures
-  /\b(in a (clear|concise|detailed|comprehensive|thorough|structured) (manner|way|format))\b/gi,
-  /\b(provide (a |an )?(comprehensive|detailed|thorough|complete|extensive) (explanation|analysis|overview|description|summary|breakdown))\b/gi,
+// ─── Rule-based compression patterns ──────────────────────────────────────────
+
+// Filler phrases to remove entirely (applied at all levels)
+const FILLERS_BASIC = [
+  /\b(please|kindly)\b\s*/gi,
+  /\b(i would like you to|i want you to|could you please|can you please|i need you to)\b\s*/gi,
+  /\b(feel free to)\b\s*/gi,
+  /\b(your task is to|your job is to|your role is to)\b\s*/gi,
+  /\b(as an? (ai|assistant|language model|llm),?)\b\s*/gi,
 ];
 
-const VERBOSE_PATTERNS = [
-  // "Write me a" → "Write a"
-  [/write me a\b/gi, 'Write a'],
-  [/write me an\b/gi, 'Write an'],
-  // "I would like" → ""
+const FILLERS_EXTENDED = [
+  /\b(very|really|extremely|quite|rather|fairly|somewhat|totally|absolutely|definitely|certainly)\b\s*/gi,
+  /\b(essentially|basically|generally|typically|usually|normally|always|often)\b\s*/gi,
+  /\b(in order to)\b/gi,
+  /\b(so as to)\b/gi,
+  /\b(for the purpose of)\b/gi,
+  /\b(with the aim of|with the goal of)\b/gi,
+  /\b(it is important to note that|it should be noted that|please note that)\b\s*/gi,
+  /\b(note that|keep in mind that|bear in mind that)\b\s*/gi,
+  /\b(as (you|we) (both )?know,?)\b\s*/gi,
+  /\b(make sure to|ensure that|be sure to)\b\s*/gi,
+  /\b(in a (clear|concise|detailed|comprehensive|thorough|structured) (manner|way|format))\b/gi,
+];
+
+// Verbose → concise word substitutions
+const WORD_SUBS = [
+  [/\butilize\b/gi, 'use'],
+  [/\butilization\b/gi, 'use'],
+  [/\bdemonstrate\b/gi, 'show'],
+  [/\bcommence\b/gi, 'start'],
+  [/\binitiate\b/gi, 'start'],
+  [/\bsubsequently\b/gi, 'then'],
+  [/\bpreviously\b/gi, 'before'],
+  [/\bcurrently\b/gi, 'now'],
+  [/\bprovide assistance\b/gi, 'help'],
+  [/\bin the event that\b/gi, 'if'],
+  [/\bdue to the fact that\b/gi, 'because'],
+  [/\bfor the reason that\b/gi, 'because'],
+  [/\bat this point in time\b/gi, 'now'],
+  [/\bat the present time\b/gi, 'now'],
+  [/\bwith regard to\b/gi, 'about'],
+  [/\bwith respect to\b/gi, 'about'],
+  [/\bin regard to\b/gi, 'about'],
+  [/\bpertaining to\b/gi, 'about'],
+  [/\bin addition to\b/gi, 'besides'],
+  [/\ba large number of\b/gi, 'many'],
+  [/\ba significant number of\b/gi, 'many'],
+  [/\bthe majority of\b/gi, 'most'],
+  [/\bin spite of the fact that\b/gi, 'although'],
+  [/\bdespite the fact that\b/gi, 'although'],
+  [/\bhas the ability to\b/gi, 'can'],
+  [/\bis able to\b/gi, 'can'],
+  [/\bwill be able to\b/gi, 'can'],
+  [/\bmake use of\b/gi, 'use'],
+  [/\btake into consideration\b/gi, 'consider'],
+  [/\btake into account\b/gi, 'consider'],
+  [/\bgive consideration to\b/gi, 'consider'],
+];
+
+// Structural phrase rewrites
+const STRUCTURAL = [
+  [/write me an?\b/gi, 'Write'],
   [/i would like\b/gi, ''],
-  // "Could you" → ""
   [/could you\b/gi, ''],
-  // Double spaces
+  [/\bi need you? to\b/gi, ''],
+  [/\bplease help me (to )?\b/gi, ''],
+  [/\byour (task|job|goal) is to\b\s*/gi, ''],
+  [/\bcan you\b/gi, ''],
+  [/\bwould you\b/gi, ''],
+  // Verbose opening patterns
+  [/^(In this task,?\s*)/gim, ''],
+  [/^(For this (task|request|assignment),?\s*)/gim, ''],
+  [/^(As an (AI|assistant|language model),?\s*)/gim, ''],
+  // "The following is" → nothing
+  [/\bthe following is (a |an )?\b/gi, ''],
+  [/\bthe following are\b/gi, ''],
+  // "You are tasked with" → ""
+  [/\byou are (tasked|asked|requested|required) (to |with )/gi, ''],
+  // Double spaces / newlines
   [/ {2,}/g, ' '],
-  // Multiple newlines
   [/\n{3,}/g, '\n\n'],
 ];
+
+// Aggressive-only patterns
+const AGGRESSIVE_EXTRA = [
+  // Remove hedging
+  [/\b(I think|I believe|I feel|I suppose|in my opinion|from my perspective),?\s*/gi, ''],
+  [/\b(if possible|if you can|if you are able to),?\s*/gi, ''],
+  [/\b(at your (earliest )?convenience)\b,?\s*/gi, ''],
+  // Shorten verbose adjective chains
+  [/\b(comprehensive|thorough|complete|extensive|detailed|in-depth)\s+(and\s+(thorough|complete|detailed|comprehensive))?\s+/gi, ''],
+  // "step by step" → ""  (instruction redundancy)
+  [/\bstep[- ]by[- ]step\s*/gi, ''],
+  // Remove trailing "Thank you" / "Thanks"
+  [/\n?(Thanks?\.?|Thank you\.?)\s*$/gi, ''],
+];
+
+function applyPatterns(text, patterns) {
+  let out = text;
+  for (const p of patterns) {
+    if (Array.isArray(p)) {
+      out = out.replace(p[0], p[1]);
+    } else {
+      out = out.replace(p, '');
+    }
+  }
+  return out;
+}
 
 function ruleCompress(text, level) {
   let out = text.trim();
 
   if (level === 'light') {
-    // Only remove obvious fillers
-    out = out.replace(FILLERS[0], '');
-    out = out.replace(FILLERS[1], '');
+    out = applyPatterns(out, FILLERS_BASIC);
   } else if (level === 'balanced') {
-    FILLERS.forEach(r => { out = out.replace(r, ''); });
+    out = applyPatterns(out, FILLERS_BASIC);
+    out = applyPatterns(out, FILLERS_EXTENDED);
+    out = applyPatterns(out, WORD_SUBS);
+    out = applyPatterns(out, STRUCTURAL);
   } else {
-    // Aggressive: fillers + verbose patterns + trim sentences
-    FILLERS.forEach(r => { out = out.replace(r, ''); });
-    VERBOSE_PATTERNS.forEach(([pat, rep]) => { out = out.replace(pat, rep); });
-    // Remove repeated sentences
+    // Aggressive
+    out = applyPatterns(out, FILLERS_BASIC);
+    out = applyPatterns(out, FILLERS_EXTENDED);
+    out = applyPatterns(out, WORD_SUBS);
+    out = applyPatterns(out, STRUCTURAL);
+    out = applyPatterns(out, AGGRESSIVE_EXTRA);
+
+    // Remove duplicate sentences
     const sentences = out.split(/(?<=[.!?])\s+/);
     const seen = new Set();
-    const unique = sentences.filter(s => {
+    out = sentences.filter(s => {
       const key = s.toLowerCase().replace(/\s+/g, ' ').trim();
-      if (seen.has(key)) return false;
+      if (!key || seen.has(key)) return false;
       seen.add(key);
       return true;
-    });
-    out = unique.join(' ');
+    }).join(' ');
   }
 
-  // Always clean up extra whitespace
+  // Always clean trailing/leading whitespace and normalize spaces
   out = out.replace(/ {2,}/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+
+  // Capitalize first letter if it got lowercased by a removal
+  if (out.length > 0) {
+    out = out.charAt(0).toUpperCase() + out.slice(1);
+  }
+
   return out;
 }
 
 // ─── AI compression via Claude API ────────────────────────────────────────────
 const SYSTEM_PROMPTS = {
-  light: 'Rewrite this AI prompt more concisely. Remove filler words and minor redundancies. Keep all details and examples. Output only the rewritten prompt.',
-  balanced: 'Compress this AI prompt to save tokens. Remove filler words, redundant phrasing, and verbose language. Preserve all key requirements, constraints, and context. Output only the compressed prompt.',
-  aggressive: 'Aggressively compress this AI prompt. Remove everything non-essential. Keep only the core intent, key constraints, and critical context. Output only the compressed prompt, no preamble.',
+  light: 'Rewrite this AI prompt more concisely. Remove filler words and minor redundancies. Keep all details and examples. Output only the rewritten prompt, nothing else.',
+  balanced: 'Compress this AI prompt to save tokens. Remove filler words, redundant phrasing, and verbose language. Preserve all key requirements, constraints, and context. Output only the compressed prompt, nothing else.',
+  aggressive: 'Aggressively compress this AI prompt to the minimum tokens needed. Remove everything non-essential: pleasantries, filler words, verbose phrasing, redundant context. Keep only the core task, key constraints, and critical context. Output only the compressed prompt, nothing else — no preamble, no explanation.',
 };
 
 async function aiCompress(text, level, apiKey) {
@@ -214,6 +301,7 @@ compressBtn.addEventListener('click', async () => {
   hideError();
   hideSavings();
   outputArea.value = '';
+  outTokens.classList.remove('improved');
   updateOutTokens();
 
   if (state.aiMode && !state.apiKey) {
@@ -238,7 +326,13 @@ compressBtn.addEventListener('click', async () => {
 
     const inTok = estimateTokens(input);
     const outTok = estimateTokens(result);
-    if (outTok < inTok) showSavings(inTok, outTok);
+
+    if (outTok < inTok) {
+      showSavings(inTok, outTok);
+    } else {
+      // Prompt was already concise — still show the result but inform user
+      showError('This prompt is already concise — minimal savings in Fast mode. Try AI mode or Aggressive level for more compression.');
+    }
 
   } catch (e) {
     showError(`Error: ${e.message}`);
