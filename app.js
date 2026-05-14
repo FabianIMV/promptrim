@@ -7,6 +7,11 @@ const state = {
   apiKey: '',
 };
 
+const STORAGE_KEYS = {
+  aiMode: 'promptrim.aiMode',
+  apiKey: 'promptrim.apiKey',
+};
+
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
 const inputArea    = document.getElementById('inputArea');
 const outputArea   = document.getElementById('outputArea');
@@ -56,11 +61,13 @@ document.querySelectorAll('.level-btn').forEach(btn => {
 apiToggle.addEventListener('change', () => {
   state.aiMode = apiToggle.checked;
   apiKeyWrap.classList.toggle('visible', state.aiMode);
+  localStorage.setItem(STORAGE_KEYS.aiMode, String(state.aiMode));
   if (state.aiMode) apiKeyInput.focus();
 });
 
 apiKeyInput.addEventListener('input', () => {
   state.apiKey = apiKeyInput.value.trim();
+  localStorage.setItem(STORAGE_KEYS.apiKey, state.apiKey);
 });
 
 // ─── Input listener ───────────────────────────────────────────────────────────
@@ -232,6 +239,8 @@ async function aiCompress(text, level, apiKey) {
   const errors = [];
 
   for (const model of models) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 25_000);
     const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
       method: 'POST',
       headers: {
@@ -243,11 +252,12 @@ async function aiCompress(text, level, apiKey) {
         generationConfig: { maxOutputTokens: 2048 },
         contents: [{ role: 'user', parts: [{ text }] }],
       }),
-    });
+      signal: controller.signal,
+    }).finally(() => clearTimeout(timeoutId));
 
     if (!resp.ok) {
-      const err = await resp.json().catch(() => ({}));
-      errors.push(`${model}: ${err?.error?.message || `API error ${resp.status}`}`);
+      const err = await parseGeminiError(resp);
+      errors.push(`${model}: ${err}`);
       continue;
     }
 
@@ -325,6 +335,27 @@ async function getGeminiModels(apiKey) {
   } catch (err) {
     console.warn('Gemini model discovery failed, using fallback models.', err);
     return preferred;
+  }
+}
+
+async function parseGeminiError(resp) {
+  const status = resp.status;
+  const statusMessage = {
+    400: 'Bad request sent to Gemini API.',
+    401: 'Invalid Gemini API key.',
+    403: 'Gemini API access denied for this key/project.',
+    404: 'Gemini model not available.',
+    429: 'Gemini API rate limit reached. Try again in a moment.',
+    500: 'Gemini service error. Please retry shortly.',
+    503: 'Gemini service temporarily unavailable.',
+  };
+
+  const fallback = statusMessage[status] || `API error ${status}`;
+  try {
+    const json = await resp.json();
+    return json?.error?.message || fallback;
+  } catch {
+    return fallback;
   }
 }
 
@@ -429,4 +460,20 @@ clearBtn.addEventListener('click', () => {
 });
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
+(() => {
+  const savedAiMode = localStorage.getItem(STORAGE_KEYS.aiMode);
+  const savedApiKey = localStorage.getItem(STORAGE_KEYS.apiKey) || '';
+
+  if (savedAiMode === 'true') {
+    state.aiMode = true;
+    apiToggle.checked = true;
+    apiKeyWrap.classList.add('visible');
+  }
+
+  if (savedApiKey) {
+    state.apiKey = savedApiKey;
+    apiKeyInput.value = savedApiKey;
+  }
+})();
+
 updateInTokens();
