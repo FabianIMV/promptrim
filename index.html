@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Primary SEO -->
+  <title>PromptTrim – Free AI Prompt Compressor | Save Tokens & Cut AI Costs</title>
+  <meta name="description" content="Compress your AI prompts instantly. PromptTrim reduces ChatGPT, Claude & Gemini prompt tokens by up to 70% while preserving meaning. Free tool, no signup required." />
+  <meta name="keywords" content="prompt compressor, token reducer, AI prompt optimizer, save tokens, reduce AI costs, ChatGPT prompt compressor, Claude prompt optimizer, prompt compression tool" />
+  <meta name="author" content="PromptTrim" />
+  <link rel="canonical" href="https://fabianimv.github.io/promptrim/" />
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://fabianimv.github.io/promptrim/" />
+  <meta property="og:title" content="PromptTrim – Free AI Prompt Compressor" />
+  <meta property="og:description" content="Reduce AI prompt tokens by up to 70% instantly. Works with ChatGPT, Claude, Gemini and any LLM. Free, no signup." />
+  <meta property="og:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
+  <meta property="og:locale" content="en_US" />
+  <meta property="og:locale:alternate" content="es_CL" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="PromptTrim – Free AI Prompt Compressor" />
+  <meta name="twitter:description" content="Reduce AI prompt tokens by up to 70%. Free tool for ChatGPT, Claude & Gemini users." />
+  <meta name="twitter:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
+
+  <!-- Geo targeting -->
+  <meta name="geo.region" content="CL" />
+  <meta name="geo.placename" content="Santiago, Chile" />
+  <meta name="language" content="en" />
+
+  <!-- Alternate languages -->
+  <link rel="alternate" hreflang="en" href="https://fabianimv.github.io/promptrim/" />
+  <link rel="alternate" hreflang="es" href="https://fabianimv.github.io/promptrim/" />
+  <link rel="alternate" hreflang="x-default" href="https://fabianimv.github.io/promptrim/" />
+
+  <!-- JSON-LD Structured Data -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "PromptTrim",
+    "url": "https://fabianimv.github.io/promptrim/",
+    "description": "Free AI prompt compressor. Reduce tokens in your ChatGPT, Claude, and Gemini prompts by up to 70% while preserving meaning.",
+    "applicationCategory": "UtilityApplication",
+    "operatingSystem": "Any",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    },
+    "featureList": [
+      "Prompt token compression",
+      "AI-powered rewriting",
+      "Rule-based fast compression",
+      "Token count estimation",
+      "Works with any LLM"
+    ],
+    "screenshot": "https://fabianimv.github.io/promptrim/og-image.png",
+    "inLanguage": ["en", "es"]
+  }
+  </script>
+
+  <style>
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --surface2: #22263a;
+      --border: #2e3350;
+      --accent: #6c63ff;
+      --accent-light: #8b84ff;
+      --text: #e8eaf6;
+      --text-muted: #8b90a7;
+      --green: #4caf7d;
+      --red: #ff6b6b;
+      --radius: 12px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* HEADER */
+    header {
+      padding: 20px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border);
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .logo {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg, var(--accent), #a78bfa);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      background: rgba(108,99,255,0.2);
+      color: var(--accent-light);
+      border: 1px solid rgba(108,99,255,0.3);
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 600;
+    }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 60px 24px 40px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff 0%, var(--accent-light) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      line-height: 1.2;
+      margin-bottom: 16px;
+    }
+
+    .hero p {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      margin-bottom: 24px;
+    }
+
+    .stats {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-num {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-light);
+    }
+
+    .stat-label {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* MAIN APP */
+    .app {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* CONTROLS */
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .level-group {
+      display: flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .level-btn {
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      cursor: pointer;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      transition: all 0.15s;
+      font-weight: 500;
+    }
+
+    .level-btn.active {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .level-btn:hover:not(.active) {
+      background: var(--surface2);
+      color: var(--text);
+    }
+
+    .api-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-left: auto;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .api-toggle input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 16px; height: 16px;
+    }
+
+    .api-key-wrap {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .api-key-wrap.visible { display: flex; }
+
+    .api-key-wrap input {
+      flex: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: monospace;
+      outline: none;
+    }
+
+    .api-key-wrap input:focus {
+      border-color: var(--accent);
+    }
+
+    .api-info {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* PANELS */
+    .panels {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .panels { grid-template-columns: 1fr; }
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface2);
+    }
+
+    .panel-title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .token-badge {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--bg);
+      padding: 2px 10px;
+      border-radius: 99px;
+      border: 1px solid var(--border);
+    }
+
+    .token-badge.improved {
+      color: var(--green);
+      border-color: rgba(76,175,125,0.3);
+      background: rgba(76,175,125,0.08);
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 320px;
+      padding: 16px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: inherit;
+      resize: vertical;
+      outline: none;
+      line-height: 1.7;
+    }
+
+    textarea::placeholder {
+      color: var(--text-muted);
+    }
+
+    /* BUTTONS */
+    .actions {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin: 20px 0;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 28px;
+      border-radius: 10px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(108,99,255,0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 24px rgba(108,99,255,0.4);
+    }
+
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-ghost {
+      background: var(--surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    /* SAVINGS BAR */
+    .savings {
+      display: none;
+      background: var(--surface);
+      border: 1px solid rgba(76,175,125,0.3);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .savings.visible { display: block; }
+
+    .savings-title {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .savings-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    .saving-item {
+      text-align: center;
+    }
+
+    .saving-num {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--green);
+    }
+
+    .saving-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* LOADING */
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ERROR */
+    .error {
+      display: none;
+      color: var(--red);
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 8px;
+      padding: 10px 16px;
+      background: rgba(255,107,107,0.08);
+      border: 1px solid rgba(255,107,107,0.2);
+      border-radius: 8px;
+    }
+
+    .error.visible { display: block; }
+
+    /* HOW IT WORKS */
+    .how {
+      max-width: 900px;
+      margin: 60px auto 0;
+      padding: 0 24px;
+      text-align: center;
+    }
+
+    .how h2 {
+      font-size: 1.6rem;
+      margin-bottom: 8px;
+    }
+
+    .how-sub {
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    .steps {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .step {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 20px;
+    }
+
+    .step-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+    }
+
+    .step h3 {
+      font-size: 1rem;
+      margin-bottom: 8px;
+    }
+
+    .step p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* FAQ */
+    .faq {
+      max-width: 720px;
+      margin: 60px auto 0;
+      padding: 0 24px;
+    }
+
+    .faq h2 {
+      text-align: center;
+      font-size: 1.6rem;
+      margin-bottom: 32px;
+    }
+
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+      padding: 20px 0;
+    }
+
+    .faq-item:last-child { border: none; }
+
+    .faq-q {
+      font-weight: 600;
+      margin-bottom: 8px;
+      cursor: pointer;
+    }
+
+    .faq-a {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* FOOTER */
+    footer {
+      text-align: center;
+      padding: 40px 24px;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      border-top: 1px solid var(--border);
+      margin-top: 60px;
+    }
+
+    footer a { color: var(--accent-light); text-decoration: none; }
+
+    /* Copy success */
+    .copy-success {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--green);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s;
+      pointer-events: none;
+    }
+
+    .copy-success.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <a href="/" class="logo">
+      <div class="logo-icon">✂️</div>
+      PromptTrim
+    </a>
+    <span class="badge">Free · No signup</span>
+  </header>
+
+  <section class="hero">
+    <h1>Compress AI Prompts.<br/>Cut Token Costs.</h1>
+    <p>Paste any prompt, get a leaner version that preserves all the meaning. Works with ChatGPT, Claude, Gemini, and any LLM.</p>
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-num">70%</div>
+        <div class="stat-label">avg token savings</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">Free</div>
+        <div class="stat-label">no signup needed</div>
+      </div>
+      <div class="stat">
+        <div class="stat-num">AI</div>
+        <div class="stat-label">powered compression</div>
+      </div>
+    </div>
+  </section>
+
+  <main class="app">
+    <!-- Controls -->
+    <div class="controls">
+      <span style="font-size:0.85rem;color:var(--text-muted);font-weight:600;">Level:</span>
+      <div class="level-group">
+        <button class="level-btn" data-level="light">Light</button>
+        <button class="level-btn active" data-level="balanced">Balanced</button>
+        <button class="level-btn" data-level="aggressive">Aggressive</button>
+      </div>
+
+      <label class="api-toggle">
+        <input type="checkbox" id="apiToggle" />
+        AI-powered (Claude API)
+      </label>
+    </div>
+
+    <div class="api-key-wrap" id="apiKeyWrap">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..." autocomplete="off" />
+      <span class="api-info">Stored locally · Never sent to our servers</span>
+    </div>
+
+    <!-- Savings bar -->
+    <div class="savings" id="savingsBar">
+      <div class="savings-title">Compression results</div>
+      <div class="savings-row">
+        <div class="saving-item">
+          <div class="saving-num" id="savePct">—</div>
+          <div class="saving-label">tokens saved</div>
+        </div>
+        <div class="saving-item">
+          <div class="saving-num" id="saveTokens">—</div>
+          <div class="saving-label">tokens removed</div>
+        </div>
+        <div class="saving-item">
+          <div class="saving-num" id="saveCost">—</div>
+          <div class="saving-label">est. cost saved (GPT-4o)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panels -->
+    <div class="panels">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Original Prompt</span>
+          <span class="token-badge" id="inTokens">0 tokens</span>
+        </div>
+        <textarea id="inputArea" placeholder="Paste your AI prompt here — system prompts, user messages, context, instructions...&#10;&#10;Example: 'I would like you to please write me a comprehensive, detailed and extensive blog post about artificial intelligence. The post should be very thorough and cover all the important aspects...'"></textarea>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">Compressed Prompt</span>
+          <span class="token-badge" id="outTokens">0 tokens</span>
+        </div>
+        <textarea id="outputArea" placeholder="Your compressed prompt will appear here..." readonly></textarea>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="actions">
+      <button class="btn btn-primary" id="compressBtn">
+        <span>✂️</span> Compress Prompt
+      </button>
+      <button class="btn btn-ghost" id="copyBtn">
+        📋 Copy Result
+      </button>
+      <button class="btn btn-ghost" id="clearBtn">
+        🗑️ Clear
+      </button>
+    </div>
+
+    <div class="error" id="errorMsg"></div>
+  </main>
+
+  <!-- How it works -->
+  <section class="how">
+    <h2>How PromptTrim Works</h2>
+    <p class="how-sub">Two compression modes depending on your needs</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">⚡</div>
+        <h3>Fast Mode (Free)</h3>
+        <p>Rule-based compression. Removes filler words, redundant phrases, and verbose patterns instantly — no API key needed.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🤖</div>
+        <h3>AI Mode (Claude)</h3>
+        <p>Uses Claude Haiku to intelligently rewrite your prompt. Preserves semantic meaning while achieving up to 70% token reduction.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">📊</div>
+        <h3>Token Analytics</h3>
+        <p>See exact token counts before and after. Estimate how much you save on GPT-4o, Claude, and Gemini API calls.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🔒</div>
+        <h3>100% Private</h3>
+        <p>Your prompts never touch our servers. API keys are stored only in your browser's local storage.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq">
+    <h2>Frequently Asked Questions</h2>
+    <div class="faq-item">
+      <div class="faq-q">Does this work for any AI model?</div>
+      <div class="faq-a">Yes. Compressed prompts work with ChatGPT (GPT-4o, GPT-4.1), Claude (Sonnet, Haiku, Opus), Gemini, Mistral, and any LLM. Tokens are counted similarly across all major providers.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is my data private?</div>
+      <div class="faq-a">In Fast Mode, compression happens 100% in your browser — nothing leaves your device. In AI Mode, your prompt is sent directly from your browser to Anthropic's API using your own API key. We never see your prompts or keys.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How much can I save?</div>
+      <div class="faq-a">Fast Mode typically saves 20-40%. AI Mode saves 40-70% on verbose prompts. Savings depend on how wordy the original prompt is — instructions with lots of filler compress the most.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Will compression change what the AI does?</div>
+      <div class="faq-a">Slight differences are possible, especially in Aggressive mode. Balanced mode is designed to preserve the full intent and context of your original prompt. Always review the output before using in production.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How is the token count estimated?</div>
+      <div class="faq-a">We use a character-based heuristic (1 token ≈ 4 characters for English) which is accurate within ~10% for most prompts. For exact counts, use your provider's tokenizer library.</div>
+    </div>
+  </section>
+
+  <footer>
+    <p>PromptTrim &copy; 2026 · <a href="https://github.com/FabianIMV/promptrim" target="_blank">Open Source on GitHub</a> · Free forever</p>
+    <p style="margin-top:8px;">Helping developers and AI users worldwide save tokens and reduce costs.</p>
+  </footer>
+
+  <div class="copy-success" id="copySuccess">✓ Copied to clipboard!</div>
+
+  <script src="app.js"></script>
+</body>
+</html>
