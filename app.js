@@ -6,8 +6,6 @@ const state = {
   aiMode: false,
   apiKey: '',
 };
-const API_KEY_STORAGE_KEY = 'prompttrim_gemini_apikey';
-const LEGACY_API_KEY_STORAGE_KEY = 'prompttrim_apikey';
 
 // ─── DOM refs ─────────────────────────────────────────────────────────────────
 const inputArea    = document.getElementById('inputArea');
@@ -58,26 +56,11 @@ document.querySelectorAll('.level-btn').forEach(btn => {
 apiToggle.addEventListener('change', () => {
   state.aiMode = apiToggle.checked;
   apiKeyWrap.classList.toggle('visible', state.aiMode);
-  if (state.aiMode) {
-    const saved =
-      localStorage.getItem(API_KEY_STORAGE_KEY) ||
-      localStorage.getItem(LEGACY_API_KEY_STORAGE_KEY);
-    if (saved) apiKeyInput.value = saved;
-    apiKeyInput.focus();
-  }
+  if (state.aiMode) apiKeyInput.focus();
 });
 
 apiKeyInput.addEventListener('input', () => {
   state.apiKey = apiKeyInput.value.trim();
-  if (state.apiKey) localStorage.setItem(API_KEY_STORAGE_KEY, state.apiKey);
-});
-
-// Load saved key
-window.addEventListener('load', () => {
-  const saved =
-    localStorage.getItem(API_KEY_STORAGE_KEY) ||
-    localStorage.getItem(LEGACY_API_KEY_STORAGE_KEY);
-  if (saved) { apiKeyInput.value = saved; state.apiKey = saved; }
 });
 
 // ─── Input listener ───────────────────────────────────────────────────────────
@@ -245,10 +228,11 @@ const SYSTEM_PROMPTS = {
 };
 
 async function aiCompress(text, level, apiKey) {
-  const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(apiKey)}`, {
+  const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
     method: 'POST',
     headers: {
       'content-type': 'application/json',
+      'x-goog-api-key': apiKey,
     },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SYSTEM_PROMPTS[level] }] },
@@ -263,8 +247,12 @@ async function aiCompress(text, level, apiKey) {
   }
 
   const data = await resp.json();
+  const blockedReason = data?.promptFeedback?.blockReason;
+  if (blockedReason) {
+    throw new Error(`Gemini blocked the request: ${blockedReason}.`);
+  }
   const output = data.candidates?.[0]?.content?.parts?.map(p => p?.text || '').join('').trim();
-  if (!output) throw new Error('Gemini returned an empty response.');
+  if (!output) throw new Error('Gemini returned no text. Try a shorter prompt or a different compression level.');
   return output;
 }
 
@@ -308,6 +296,10 @@ compressBtn.addEventListener('click', async () => {
 
   if (state.aiMode && !state.apiKey) {
     showError('Enter your Gemini API key above, or uncheck "AI-powered" to use fast mode.');
+    return;
+  }
+  if (state.aiMode && !state.apiKey.startsWith('AIza')) {
+    showError('Gemini API keys usually start with "AIza". Check your key and try again.');
     return;
   }
 
