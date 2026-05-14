@@ -249,10 +249,16 @@ async function aiCompress(text, level, apiKey) {
   const data = await resp.json();
   const blockedReason = data?.promptFeedback?.blockReason;
   if (blockedReason) {
-    throw new Error(`Gemini blocked the request: ${blockedReason}.`);
+    const blockedMsg = data?.promptFeedback?.blockReasonMessage;
+    throw new Error(blockedMsg || `Gemini blocked the request (${blockedReason}).`);
   }
-  const output = data.candidates?.[0]?.content?.parts?.map(p => p?.text || '').join('').trim();
-  if (!output) throw new Error('Gemini returned no text. Try a shorter prompt or a different compression level.');
+  const firstCandidate = data.candidates?.[0];
+  const output = firstCandidate?.content?.parts?.map(p => p?.text || '').join('').trim();
+  if (!output) {
+    const finishReason = firstCandidate?.finishReason;
+    if (finishReason) throw new Error(`Gemini did not return text (finish reason: ${finishReason}).`);
+    throw new Error('Gemini returned no text. Check your key, prompt content, and model availability.');
+  }
   return output;
 }
 
@@ -298,11 +304,6 @@ compressBtn.addEventListener('click', async () => {
     showError('Enter your Gemini API key above, or uncheck "AI-powered" to use fast mode.');
     return;
   }
-  if (state.aiMode && !state.apiKey.startsWith('AIza')) {
-    showError('Gemini API keys usually start with "AIza". Check your key and try again.');
-    return;
-  }
-
   // Loading state
   compressBtn.disabled = true;
   compressBtn.innerHTML = '<span class="spinner"></span> Compressing…';
