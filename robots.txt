@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://fabianimv.github.io/promptrim/sitemap.xml
