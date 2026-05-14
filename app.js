@@ -56,24 +56,11 @@ document.querySelectorAll('.level-btn').forEach(btn => {
 apiToggle.addEventListener('change', () => {
   state.aiMode = apiToggle.checked;
   apiKeyWrap.classList.toggle('visible', state.aiMode);
-  if (state.aiMode) {
-    const saved = localStorage.getItem('prompttrim_apikey');
-    if (saved) apiKeyInput.value = saved;
-    apiKeyInput.focus();
-  }
+  if (state.aiMode) apiKeyInput.focus();
 });
 
 apiKeyInput.addEventListener('input', () => {
   state.apiKey = apiKeyInput.value.trim();
-  if (state.apiKey.startsWith('sk-ant-')) {
-    localStorage.setItem('prompttrim_apikey', state.apiKey);
-  }
-});
-
-// Load saved key
-window.addEventListener('load', () => {
-  const saved = localStorage.getItem('prompttrim_apikey');
-  if (saved) { apiKeyInput.value = saved; state.apiKey = saved; }
 });
 
 // ─── Input listener ───────────────────────────────────────────────────────────
@@ -233,7 +220,7 @@ function ruleCompress(text, level) {
   return out;
 }
 
-// ─── AI compression via Claude API ────────────────────────────────────────────
+// ─── AI compression via Gemini API ────────────────────────────────────────────
 const SYSTEM_PROMPTS = {
   light: 'Rewrite this AI prompt more concisely. Remove filler words and minor redundancies. Keep all details and examples. Output only the rewritten prompt, nothing else.',
   balanced: 'Compress this AI prompt to save tokens. Remove filler words, redundant phrasing, and verbose language. Preserve all key requirements, constraints, and context. Output only the compressed prompt, nothing else.',
@@ -241,19 +228,16 @@ const SYSTEM_PROMPTS = {
 };
 
 async function aiCompress(text, level, apiKey) {
-  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+  const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
     method: 'POST',
     headers: {
-      'x-api-key': apiKey,
-      'anthropic-version': '2023-06-01',
       'content-type': 'application/json',
-      'anthropic-dangerous-allow-browser': 'true',
+      'x-goog-api-key': apiKey,
     },
     body: JSON.stringify({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2048,
-      system: SYSTEM_PROMPTS[level],
-      messages: [{ role: 'user', content: text }],
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPTS[level] }] },
+      generationConfig: { maxOutputTokens: 2048 },
+      contents: [{ role: 'user', parts: [{ text }] }],
     }),
   });
 
@@ -263,7 +247,19 @@ async function aiCompress(text, level, apiKey) {
   }
 
   const data = await resp.json();
-  return data.content?.[0]?.text || '';
+  const blockedReason = data?.promptFeedback?.blockReason;
+  if (blockedReason) {
+    const blockedMsg = data?.promptFeedback?.blockReasonMessage;
+    throw new Error(blockedMsg || `Gemini blocked the request (${blockedReason}).`);
+  }
+  const firstCandidate = data.candidates?.[0];
+  const output = firstCandidate?.content?.parts?.map(p => p?.text || '').join('').trim();
+  if (!output) {
+    const finishReason = firstCandidate?.finishReason;
+    if (finishReason) throw new Error(`Gemini did not return text (finish reason: ${finishReason}).`);
+    throw new Error('Gemini returned no text. Check your key, prompt content, and model availability.');
+  }
+  return output;
 }
 
 // ─── Show/hide savings ────────────────────────────────────────────────────────
@@ -305,10 +301,9 @@ compressBtn.addEventListener('click', async () => {
   updateOutTokens();
 
   if (state.aiMode && !state.apiKey) {
-    showError('Enter your Claude API key above, or uncheck "AI-powered" to use fast mode.');
+    showError('Enter your Gemini API key above, or uncheck "AI-powered" to use fast mode.');
     return;
   }
-
   // Loading state
   compressBtn.disabled = true;
   compressBtn.innerHTML = '<span class="spinner"></span> Compressing…';
