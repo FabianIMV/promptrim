@@ -21,7 +21,6 @@
   <meta property="og:description" content="Reduce AI prompt tokens by up to 70% instantly. Works with ChatGPT, Claude, Gemini and any LLM. Free, no signup." />
   <meta property="og:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
   <meta property="og:locale" content="en_US" />
-  <meta property="og:locale:alternate" content="es_CL" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
@@ -32,11 +31,10 @@
   <!-- Geo targeting -->
   <meta name="geo.region" content="CL" />
   <meta name="geo.placename" content="Santiago, Chile" />
-  <meta name="language" content="en" />
+  <meta name="language" content="en-US" />
 
   <!-- Alternate languages -->
   <link rel="alternate" hreflang="en" href="https://fabianimv.github.io/promptrim/" />
-  <link rel="alternate" hreflang="es" href="https://fabianimv.github.io/promptrim/" />
   <link rel="alternate" hreflang="x-default" href="https://fabianimv.github.io/promptrim/" />
 
   <!-- JSON-LD Structured Data -->
@@ -62,7 +60,7 @@
       "Works with any LLM"
     ],
     "screenshot": "https://fabianimv.github.io/promptrim/og-image.png",
-    "inLanguage": ["en", "es"]
+    "inLanguage": "en"
   }
   </script>
 
@@ -72,8 +70,9 @@
       --surface: #1a1d27;
       --surface2: #22263a;
       --border: #2e3350;
-      --accent: #6c63ff;
-      --accent-light: #8b84ff;
+      --accent: #6366f1;
+      --accent-light: #a5b4fc;
+      --accent-rose: #f43f5e;
       --text: #e8eaf6;
       --text-muted: #8b90a7;
       --green: #4caf7d;
@@ -130,6 +129,33 @@
       font-weight: 600;
     }
 
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .star-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(244,63,94,0.35);
+      background: rgba(244,63,94,0.12);
+      color: #ffd8df;
+      font-weight: 600;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+
+    .star-btn:hover {
+      background: rgba(244,63,94,0.2);
+      border-color: rgba(244,63,94,0.55);
+      transform: translateY(-1px);
+    }
+
     /* HERO */
     .hero {
       text-align: center;
@@ -153,6 +179,33 @@
       color: var(--text-muted);
       font-size: 1.1rem;
       margin-bottom: 24px;
+    }
+
+    .hero-actions {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+
+    .hero-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.15s;
+    }
+
+    .hero-link:hover {
+      border-color: var(--accent-light);
+      color: #fff;
     }
 
     .stats {
@@ -575,12 +628,19 @@
       <div class="logo-icon">✂️</div>
       PromptTrim
     </a>
-    <span class="badge">Free · No signup</span>
+    <div class="header-actions">
+      <span class="badge">Free · No signup</span>
+      <a class="star-btn" href="https://github.com/FabianIMV/promptrim" target="_blank" rel="noopener noreferrer">⭐ Star on GitHub</a>
+    </div>
   </header>
 
   <section class="hero">
     <h1>Compress AI Prompts.<br/>Cut Token Costs.</h1>
     <p>Paste any prompt, get a leaner version that preserves all the meaning. Works with ChatGPT, Claude, Gemini, and any LLM.</p>
+    <div class="hero-actions">
+      <a class="hero-link" href="https://github.com/FabianIMV/promptrim/stargazers" target="_blank" rel="noopener noreferrer">🌟 Support the project</a>
+      <a class="hero-link" href="https://github.com/FabianIMV/promptrim" target="_blank" rel="noopener noreferrer">💻 View source code</a>
+    </div>
     <div class="stats">
       <div class="stat">
         <div class="stat-num">70%</div>
@@ -695,7 +755,7 @@
       <div class="step">
         <div class="step-icon">🔒</div>
         <h3>100% Private</h3>
-        <p>Your prompts never touch our servers. API keys are stored only in your browser's local storage.</p>
+        <p>Your prompts never touch our servers. API keys are used only in your current browser session and never sent to our servers.</p>
       </div>
     </div>
   </section>
