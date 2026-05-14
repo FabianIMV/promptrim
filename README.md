@@ -86,6 +86,19 @@ The app automatically detects available Gemini models and falls back when necess
 
 ---
 
+## Gemini API Key Setup
+
+AI Mode requires your own **Google AI Studio Gemini API key**.
+
+1. Open Google AI Studio: https://aistudio.google.com/
+2. Sign in and create an API key.
+3. In PromptTrim, enable **AI-powered (Gemini API)**.
+4. Paste your API key into the API key field.
+
+If you do not provide a key, PromptTrim still works in Fast Mode (no API key needed).
+
+---
+
 ## Use Cases
 
 - Reducing LLM API costs
