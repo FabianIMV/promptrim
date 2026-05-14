@@ -279,7 +279,11 @@ async function getGeminiModels(apiKey) {
   // Prefer current stable/preview text models commonly available for generateContent.
   const preferred = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'];
   try {
-    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(apiKey)}`);
+    const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
+      headers: {
+        'x-goog-api-key': apiKey,
+      },
+    });
     if (!resp.ok) return preferred;
 
     const data = await resp.json();
@@ -293,7 +297,8 @@ async function getGeminiModels(apiKey) {
     const preferredAvailable = preferred.filter(model => available.includes(model));
     const extraAvailable = available.filter(model => !preferred.includes(model));
     return [...preferredAvailable, ...extraAvailable];
-  } catch {
+  } catch (err) {
+    console.warn('Gemini model discovery failed, using fallback models.', err);
     return preferred;
   }
 }
