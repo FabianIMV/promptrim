@@ -228,38 +228,51 @@ const SYSTEM_PROMPTS = {
 };
 
 async function aiCompress(text, level, apiKey) {
-  const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent', {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      'x-goog-api-key': apiKey,
-    },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: SYSTEM_PROMPTS[level] }] },
-      generationConfig: { maxOutputTokens: 2048 },
-      contents: [{ role: 'user', parts: [{ text }] }],
-    }),
-  });
+  const models = ['gemini-3.1-flash', 'gemini-3.1-pro'];
+  const errors = [];
 
-  if (!resp.ok) {
-    const err = await resp.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `API error ${resp.status}`);
+  for (const model of models) {
+    const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-goog-api-key': apiKey,
+      },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPTS[level] }] },
+        generationConfig: { maxOutputTokens: 2048 },
+        contents: [{ role: 'user', parts: [{ text }] }],
+      }),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      errors.push(`${model}: ${err?.error?.message || `API error ${resp.status}`}`);
+      continue;
+    }
+
+    const data = await resp.json();
+    const blockedReason = data?.promptFeedback?.blockReason;
+    if (blockedReason) {
+      const blockedMsg = data?.promptFeedback?.blockReasonMessage;
+      errors.push(`${model}: ${blockedMsg || `Gemini blocked the request (${blockedReason}).`}`);
+      continue;
+    }
+    const firstCandidate = data.candidates?.[0];
+    const output = firstCandidate?.content?.parts?.map(p => p?.text || '').join('').trim();
+    if (!output) {
+      const finishReason = firstCandidate?.finishReason;
+      if (finishReason) {
+        errors.push(`${model}: Gemini did not return text (finish reason: ${finishReason}).`);
+      } else {
+        errors.push(`${model}: Gemini returned no text. Check your key, prompt content, and model availability.`);
+      }
+      continue;
+    }
+    return output;
   }
 
-  const data = await resp.json();
-  const blockedReason = data?.promptFeedback?.blockReason;
-  if (blockedReason) {
-    const blockedMsg = data?.promptFeedback?.blockReasonMessage;
-    throw new Error(blockedMsg || `Gemini blocked the request (${blockedReason}).`);
-  }
-  const firstCandidate = data.candidates?.[0];
-  const output = firstCandidate?.content?.parts?.map(p => p?.text || '').join('').trim();
-  if (!output) {
-    const finishReason = firstCandidate?.finishReason;
-    if (finishReason) throw new Error(`Gemini did not return text (finish reason: ${finishReason}).`);
-    throw new Error('Gemini returned no text. Check your key, prompt content, and model availability.');
-  }
-  return output;
+  throw new Error(errors[errors.length - 1] || 'Gemini request failed for all configured models.');
 }
 
 // ─── Show/hide savings ────────────────────────────────────────────────────────
