@@ -276,7 +276,9 @@ async function aiCompress(text, level, apiKey) {
 }
 
 async function getGeminiModels(apiKey) {
-  // Prefer current stable/preview text models commonly available for generateContent.
+  // Preferred models in priority order. Exact names tried first; versioned/preview
+  // variants (e.g. gemini-2.5-flash-preview-04-17) follow immediately after their
+  // base name so priority is preserved even when Google only publishes dated snapshots.
   const preferred = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.5-pro', 'gemini-1.5-flash', 'gemini-1.5-pro'];
   try {
     const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/models', {
@@ -294,20 +296,32 @@ async function getGeminiModels(apiKey) {
 
     if (!available.length) return preferred;
 
-    // Exact preferred matches first (in preferred order).
-    const preferredAvailable = preferred.filter(model => available.includes(model));
-    // Then versioned/preview variants of preferred models (e.g. gemini-2.5-flash-preview-04-17),
-    // sorted by the order of their matching preferred prefix.
-    const preferredPrefixAvailable = available
-      .filter(m => !preferredAvailable.includes(m) && preferred.some(p => m.startsWith(p + '-')))
-      .map(m => ({ m, idx: preferred.findIndex(p => m.startsWith(p + '-')) }))
-      .sort((a, b) => a.idx - b.idx)
-      .map(({ m }) => m);
-    // Everything else last.
-    const extraAvailable = available.filter(
-      m => !preferred.some(p => m === p || m.startsWith(p + '-'))
-    );
-    return [...preferredAvailable, ...preferredPrefixAvailable, ...extraAvailable];
+    // Pre-group available models by their matching preferred prefix so the main
+    // loop runs in O(n+m) rather than O(n×m).
+    const exactSet = new Set(available);
+    const byPrefix = new Map();
+    for (const m of available) {
+      const pref = preferred.find(p => m.startsWith(p + '-'));
+      if (pref) {
+        if (!byPrefix.has(pref)) byPrefix.set(pref, []);
+        byPrefix.get(pref).push(m);
+      }
+    }
+
+    // Build result: for each preferred name (in priority order) add the exact
+    // match then its versioned/preview variants, so e.g.
+    // gemini-2.5-flash-preview-04-17 is tried before gemini-2.0-flash.
+    const matched = new Set();
+    const result = [];
+    for (const pref of preferred) {
+      if (exactSet.has(pref)) { result.push(pref); matched.add(pref); }
+      for (const m of (byPrefix.get(pref) || [])) { result.push(m); matched.add(m); }
+    }
+    // Append any remaining models not covered by the preferred list.
+    for (const m of available) {
+      if (!matched.has(m)) result.push(m);
+    }
+    return result;
   } catch (err) {
     console.warn('Gemini model discovery failed, using fallback models.', err);
     return preferred;
