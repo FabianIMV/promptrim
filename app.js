@@ -294,9 +294,20 @@ async function getGeminiModels(apiKey) {
 
     if (!available.length) return preferred;
 
+    // Exact preferred matches first (in preferred order).
     const preferredAvailable = preferred.filter(model => available.includes(model));
-    const extraAvailable = available.filter(model => !preferred.includes(model));
-    return [...preferredAvailable, ...extraAvailable];
+    // Then versioned/preview variants of preferred models (e.g. gemini-2.5-flash-preview-04-17),
+    // sorted by the order of their matching preferred prefix.
+    const preferredPrefixAvailable = available
+      .filter(m => !preferredAvailable.includes(m) && preferred.some(p => m.startsWith(p + '-')))
+      .map(m => ({ m, idx: preferred.findIndex(p => m.startsWith(p + '-')) }))
+      .sort((a, b) => a.idx - b.idx)
+      .map(({ m }) => m);
+    // Everything else last.
+    const extraAvailable = available.filter(
+      m => !preferred.some(p => m === p || m.startsWith(p + '-'))
+    );
+    return [...preferredAvailable, ...preferredPrefixAvailable, ...extraAvailable];
   } catch (err) {
     console.warn('Gemini model discovery failed, using fallback models.', err);
     return preferred;
