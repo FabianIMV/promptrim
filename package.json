@@ -1,0 +1,35 @@
+{
+  "name": "promptrim",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "type": "module",
+  "description": "The prompt compressor that proves it did not break your prompt.",
+  "license": "MIT",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . && prettier --check .",
+    "format": "prettier --write .",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "preact": "^10.27.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@preact/preset-vite": "^2.10.2",
+    "@types/node": "^24.13.3",
+    "@vitest/coverage-v8": "^3.2.7",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.4.0",
+    "prettier": "^3.6.2",
+    "typescript": "^5.9.2",
+    "typescript-eslint": "^8.44.1",
+    "vite": "^7.1.5",
+    "vitest": "^3.2.4"
+  }
+}

@@ -12,6 +12,7 @@
   <meta name="description" content="Compress your AI prompts instantly. PromptTrim reduces ChatGPT, Claude & Gemini prompt tokens by up to 70% while preserving meaning. Free tool, no signup required." />
   <meta name="keywords" content="prompt compressor, token reducer, AI prompt optimizer, save tokens, reduce AI costs, ChatGPT prompt compressor, Claude prompt optimizer, prompt compression tool" />
   <meta name="author" content="PromptTrim" />
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="canonical" href="https://fabianimv.github.io/promptrim/" />
 
   <!-- Open Graph -->
@@ -569,6 +570,13 @@
       font-size: 0.9rem;
     }
 
+    .savings-note {
+      margin-top: 10px;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
     /* FOOTER */
     footer {
       text-align: center;
@@ -639,87 +647,10 @@
     </div>
   </section>
 
-  <main class="app">
-    <!-- Controls -->
-    <div class="controls">
-      <span style="font-size:0.85rem;color:var(--text-muted);font-weight:600;">Level:</span>
-      <div class="level-group">
-        <button class="level-btn" data-level="light">Light</button>
-        <button class="level-btn active" data-level="balanced">Balanced</button>
-        <button class="level-btn" data-level="aggressive">Aggressive</button>
-      </div>
-
-      <label class="api-toggle">
-        <input type="checkbox" id="apiToggle" />
-        AI-powered (Gemini API)
-      </label>
-    </div>
-
-    <div class="api-key-wrap" id="apiKeyWrap">
-      <input type="password" id="apiKeyInput" placeholder="AIza..." autocomplete="off" />
-      <span class="api-info">Used only in this session · Never sent to our servers</span>
-    </div>
-    <div class="api-help">
-      <a
-        class="hero-link"
-        href="https://github.com/FabianIMV/promptrim#gemini-api-key-setup"
-        target="_blank"
-        rel="noopener noreferrer"
-      >Help: Want to know how to use AI Mode?</a>
-    </div>
-
-    <!-- Savings bar -->
-    <div class="savings" id="savingsBar">
-      <div class="savings-title">Compression results</div>
-      <div class="savings-row">
-        <div class="saving-item">
-          <div class="saving-num" id="savePct">—</div>
-          <div class="saving-label">tokens saved</div>
-        </div>
-        <div class="saving-item">
-          <div class="saving-num" id="saveTokens">—</div>
-          <div class="saving-label">tokens removed</div>
-        </div>
-        <div class="saving-item">
-          <div class="saving-num" id="saveCost">—</div>
-          <div class="saving-label">est. cost saved (GPT-4o)</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Panels -->
-    <div class="panels">
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Original Prompt</span>
-          <span class="token-badge" id="inTokens">0 tokens</span>
-        </div>
-        <textarea id="inputArea" placeholder="Paste your AI prompt here — system prompts, user messages, context, instructions...&#10;&#10;Example: 'I would like you to please write me a comprehensive, detailed and extensive blog post about artificial intelligence. The post should be very thorough and cover all the important aspects...'"></textarea>
-      </div>
-
-      <div class="panel">
-        <div class="panel-header">
-          <span class="panel-title">Compressed Prompt</span>
-          <span class="token-badge" id="outTokens">0 tokens</span>
-        </div>
-        <textarea id="outputArea" placeholder="Your compressed prompt will appear here..." readonly></textarea>
-      </div>
-    </div>
-
-    <!-- Actions -->
-    <div class="actions">
-      <button class="btn btn-primary" id="compressBtn">
-        <span>✂️</span> Compress Prompt
-      </button>
-      <button class="btn btn-ghost" id="copyBtn">
-        📋 Copy Result
-      </button>
-      <button class="btn btn-ghost" id="clearBtn">
-        🗑️ Clear
-      </button>
-    </div>
-
-    <div class="error" id="errorMsg"></div>
+  <main class="app" id="app">
+    <noscript>
+      PromptTrim runs entirely in your browser and needs JavaScript enabled to compress prompts.
+    </noscript>
   </main>
 
   <!-- How it works -->
@@ -780,8 +711,6 @@
     <p style="margin-top:8px;">Helping developers and AI users worldwide save tokens and reduce costs.</p>
   </footer>
 
-  <div class="copy-success" id="copySuccess">✓ Copied to clipboard!</div>
-
-  <script src="app.js?v=4"></script>
+  <script type="module" src="/src/main.tsx"></script>
 </body>
 </html>

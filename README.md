@@ -112,10 +112,38 @@ If you do not provide a key, PromptTrim still works in Fast Mode (no API key nee
 
 ## Tech Stack
 
-- Vanilla JavaScript
-- Static HTML/CSS
+- Vite + TypeScript + [Preact](https://preactjs.com/)
+- Compression engine as pure functions in `src/core/` (no DOM), covered by Vitest
 - Gemini API (optional, browser-side)
-- GitHub Pages
+- GitHub Pages, built and deployed by GitHub Actions
+
+---
+
+## Development
+
+```bash
+npm ci
+npm run dev     # local dev server
+npm run lint    # ESLint + Prettier
+npm test        # Vitest
+npm run build   # type-check + production build into dist/
+```
+
+Layout:
+
+| Path | What lives there |
+|------|------------------|
+| `src/core/segment.ts` | Marks code, strings, URLs, JSON, tables, variables and examples as protected regions |
+| `src/core/rules/` | Compression rules, each with `id`, `level`, `lossy`, a readable "why" and its own test cases |
+| `src/core/compress.ts` | Applies rules outside protected regions and returns a list of `Change`s |
+| `src/providers/` | Browser-side LLM providers (Gemini today) |
+| `src/ui/` | Preact components mounted into the static SEO page |
+| `bench/corpus/` | Prompts used as regression fixtures |
+| `docs/PLAN.md` | Phased plan and status table |
+
+`src/core/rules/discarded.ts` records the legacy rules that were deliberately
+**not** ported (anything that deleted instructions such as "step by step",
+"ensure", "always" or whole sentences), with the reason for each.
 
 ---
 
