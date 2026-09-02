@@ -280,7 +280,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 
 | Fase | Estado | Fecha | PR | Notas |
 |------|--------|-------|----|-------|
-| 0 | ✅ Completada | 2026-09-02 | PENDING_PR | Scaffold Vite+TS+Preact+Vitest, segmentador de regiones protegidas, motor de reglas con `Change[]`, UI Preact con paridad. 299 tests. Ver 6.1. |
+| 0 | ✅ Completada | 2026-09-02 | [#9](https://github.com/FabianIMV/promptrim/pull/9) | Scaffold Vite+TS+Preact+Vitest, segmentador de regiones protegidas, motor de reglas con `Change[]`, UI Preact con paridad. 299 tests. Ver 6.1. |
 | 1 | Pendiente | | | |
 | 2 | Pendiente | | | |
 | 3 | Pendiente | | | |
