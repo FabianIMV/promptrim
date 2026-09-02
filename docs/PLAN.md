@@ -281,7 +281,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | Fase | Estado | Fecha | PR | Notas |
 |------|--------|-------|----|-------|
 | 0 | ✅ Completada | 2026-09-02 | [#9](https://github.com/FabianIMV/promptrim/pull/9) | Scaffold Vite+TS+Preact+Vitest, segmentador de regiones protegidas, motor de reglas con `Change[]`, UI Preact con paridad. 299 tests. Ver 6.1. |
-| 1 | Pendiente | | | |
+| 1 | ✅ Completada | 2026-09-02 | [#10](https://github.com/FabianIMV/promptrim/pull/10) | Tokenizador exacto o200k (`js-tiktoken`, lazy), estimador calibrado para Claude, `countTokens` real de Gemini con fallback, `data/pricing.json` verificado hoy en las 3 webs oficiales, UI con selector de modelo objetivo, campo llamadas/día y proyección mensual. 343 tests (+44). Ver 6.2. |
 | 2 | Pendiente | | | |
 | 3 | Pendiente | | | |
 | 4 | Pendiente | | | |
@@ -346,3 +346,85 @@ Corpus de 10 prompts en `bench/corpus/phase0/`: **0 cambios dentro de regiones p
 - `src/core/index.ts` y `estimate.ts` sin cobertura directa (son reexportes y el placeholder de la Fase 1).
 - El corpus de la Fase 0 (10 prompts) está en `bench/corpus/phase0/` para que el corpus anotado de 30 prompts
   de la Fase 2 pueda convivir en `bench/corpus/` sin colisiones.
+
+### 6.2 Fase 1 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-02): `npm run lint` ✅, `npm test` ✅ (343 tests, 10 archivos),
+`npm run build` ✅. Bundle inicial: 17,92 kB gzip (`index-*.js`), frente a 16,02 kB gzip en `main` antes de esta
+fase — crece +1,9 kB gzip, muy por debajo del límite de +30 kB del criterio de aceptación. El chunk de
+`o200k_base` (2,3 MB / 1,14 MB gzip) y el runtime `js-tiktoken/lite` se cargan por `import()` dinámico bajo
+demanda y **no** aparecen en `dist/index.html` (verificado leyendo el HTML generado): nunca se descargan a
+menos que se cuenten tokens para un modelo OpenAI. Smoke test manual con Playwright + Chromium headless contra
+`vite preview`: selector de modelo, conteo exacto al cambiar a GPT-5, compresión, panel de ahorro y proyección
+mensual funcionan sin errores de consola (capturas en la sesión, no versionadas).
+
+**Precios verificados hoy, en la página oficial de cada proveedor** (no de memoria; `last_verified` en
+`data/pricing.json`):
+
+- Anthropic — `platform.claude.com/docs/en/about-claude/pricing` (redirige desde `docs.claude.com`). Confirma
+  exactamente los valores de referencia del plan: Opus 5 $5/$25, Sonnet 5 $2/$10, Haiku 4.5 $1/$5; cachés a
+  1,25× (5 min) / 2× (1 h) para escritura y 0,1× para lectura. La página también documenta que el precio
+  introductorio de Sonnet 5 ($2/$10) pasó a ser el precio estándar (no habrá alza a $3/$15 el 1 de septiembre).
+- OpenAI — `developers.openai.com/api/docs/pricing` (versión `.md` cruda, para evitar que el resumen de un
+  modelo intermedio alucinara nombres). El primer fetch devolvió modelos "gpt-5.6-sol/terra/luna" que parecían
+  sospechosos (no es la convención de nombres habitual de OpenAI); se verificó con una segunda fuente
+  independiente (búsqueda web) y con el HTML/Markdown crudo de la propia página oficial antes de aceptarlos — no
+  hay señal de inyección, es simplemente una familia de modelos posterior al corte de conocimiento del
+  implementador. GPT-5 coincide con la referencia del plan ($1,25/$10, cached $0,125).
+- Google Gemini — `ai.google.dev/gemini-api/docs/pricing`. Flash $0,30/$2,50 con caché $0,03 (10% del input) +
+  $1/MTok/hora de almacenamiento; coincide con la referencia del plan. Pro tiene tarificación por tramos
+  (≤200k vs >200k tokens); se registró el tramo ≤200k como principal y el tramo alto en el campo `notes`.
+
+**Decisiones de arquitectura tomadas en esta fase:**
+
+1. **`data/pricing.json`** usa un array plano `models[]` con `provider`, `input_per_mtok`, `output_per_mtok` y
+   campos de caché específicos por proveedor (`cache_write_5m_per_mtok`/`cache_write_1h_per_mtok`/
+   `cache_read_per_mtok` en Anthropic; `cached_input_per_mtok` en OpenAI; `cache_write_per_mtok`/
+   `cache_storage_per_mtok_hour` en Gemini) porque los tres modelan el caché de forma distinta y forzar un
+   esquema común habría perdido información. Cada modelo lleva su propio `last_verified` y `source_url` además
+   del `last_verified` global, para poder re-verificar de a uno en fases futuras sin perder trazabilidad.
+2. **Selector de modelo único**, no "badge de tokens por proveedor" simultáneo. La Sección 3 menciona ambas
+   frases; se interpretó como un selector de modelo objetivo (agrupado por proveedor con `<optgroup>`) que
+   decide qué tokenizador y qué precio se usan, en vez de tres conteos en paralelo — más simple y consistente
+   con "selector de modelo objetivo" del mismo punto del plan. Puede revisarse en Fase 3/6 si se quiere
+   comparación lado a lado.
+3. **Estimador de Claude**: promedio de dos ratios que la propia documentación de Anthropic publica para texto
+   en inglés (≈4 caracteres o ≈0,75 palabras por token), en vez de una única razón char/N. Calibrado contra los
+   20 fixtures de `o200k_base` como proxy (no existe corpus público de referencia de Claude): error absoluto
+   medio ≈17% excluyendo casos degenerados (repetición de un carácter, cadenas de solo dígitos o solo
+   símbolos) y ≈3-5% en prosa larga natural. El objetivo del plan ("~7% de error, al estilo tokensift") no se
+   alcanza en el fixture completo, sobre todo por strings muy cortas (2-3 palabras) donde el error relativo es
+   inherentemente alto con cualquier heurística; documentado en el docstring de `claude.ts` y verificado con un
+   test de cota (`< 30%` de MAPE sobre el subconjunto de prosa). Gemini sin API key reutiliza el mismo
+   estimador en vez de inventar una segunda fórmula sin calibrar.
+4. **Conjunto de modelos por proveedor** (10 en total): 3 Anthropic (Opus 5, Sonnet 5, Haiku 4.5 — los tres que
+   nombra el plan), 5 OpenAI (el flagship y el económico más recientes — `gpt-5.6-sol`/`gpt-5.6-luna` —, `gpt-5`
+   y `gpt-5-mini` por ser la referencia del plan y ampliamente desplegados, y `gpt-4o` por seguir siendo común
+   en integraciones existentes) y 2 Gemini (2.5 Pro, 2.5 Flash). Selección editorial para mantener el desplegable
+   manejable; ampliable sin cambios de esquema.
+5. **`estimate.ts` se elimina** (no se deja como wrapper de compatibilidad) junto con `estimateTokens` /
+   `estimateCostSaved`: no había otros consumidores fuera de `App.tsx` y el propio archivo estaba marcado
+   `@deprecated` desde la Fase 0 a la espera de este reemplazo.
+
+**Desviaciones respecto al plan:**
+
+- Tarea 2 pedía "~7% de error" para el estimador de Claude; el error real medido es mayor (ver decisión 3).
+  Documentado en vez de ocultado; no bloquea la aceptación de la fase porque esa cifra no es un criterio de
+  aceptación formal de la Sección 3, solo un objetivo de diseño.
+- La FAQ de `index.html` ("How is the token count estimated?") describía la heurística `chars/4` que esta fase
+  reemplaza; se reescribió para explicar el comportamiento real (exacto en OpenAI y en Gemini con clave,
+  estimado si no) porque dejarla intacta habría sido publicar una afirmación falsa sobre el propio producto —
+  el mismo tipo de problema que el plan busca eliminar. El resto del copy de marketing con "70%" (meta tags,
+  FAQ de savings, sección "How it works") se deja intacto a propósito: su reemplazo por el benchmark real es
+  tarea explícita de la Fase 6.
+- Se añadió `chunkSizeWarningLimit` en `vite.config.ts` para silenciar la advertencia esperada de Rollup sobre
+  el chunk de `o200k_base` (es grande a propósito y nunca se carga en el bundle inicial).
+
+**Deuda pendiente que hereda la Fase 2:**
+
+- Tramo >200k tokens de Gemini Pro no modelado numéricamente, solo documentado en `notes`.
+- Sin corpus de calibración público para Claude/Gemini heurístico; si Fase 5 añade claves de Anthropic/OpenAI,
+  conviene sustituir el estimador de Claude por `POST /v1/messages/count_tokens` igual que ya se hizo con
+  Gemini.
+- El selector de modelo vive en `App.tsx` sin persistencia (no se guarda en `localStorage` como si ocurre con
+  el modo IA); evaluar si vale la pena en una fase de UI posterior.

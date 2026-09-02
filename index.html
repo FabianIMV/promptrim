@@ -270,6 +270,57 @@
       width: 16px; height: 16px;
     }
 
+    .cost-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+      padding: 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .cost-field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .cost-field select,
+    .cost-field input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .cost-field select:focus,
+    .cost-field input:focus {
+      border-color: var(--accent);
+    }
+
+    .cost-field input[type="number"] {
+      width: 100px;
+    }
+
+    .cost-hint {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    .cost-hint a {
+      color: var(--accent-light);
+    }
+
     .api-key-wrap {
       display: none;
       align-items: center;
@@ -633,10 +684,6 @@
     </div>
     <div class="stats">
       <div class="stat">
-        <div class="stat-num">70%</div>
-        <div class="stat-label">avg token savings</div>
-      </div>
-      <div class="stat">
         <div class="stat-num">Free</div>
         <div class="stat-label">no signup needed</div>
       </div>
@@ -701,8 +748,8 @@
       <div class="faq-a">Slight differences are possible, especially in Aggressive mode. Balanced mode is designed to preserve the full intent and context of your original prompt. Always review the output before using in production.</div>
     </div>
     <div class="faq-item">
-      <div class="faq-q">How is the token count estimated?</div>
-      <div class="faq-a">We use a character-based heuristic (1 token ≈ 4 characters for English) which is accurate within ~10% for most prompts. For exact counts, use your provider's tokenizer library.</div>
+      <div class="faq-q">How is the token count calculated?</div>
+      <div class="faq-a">It depends on the target model you pick. For OpenAI models we run the real o200k tokenizer in your browser, so the count is exact. For Gemini, entering your API key gets you an exact count from Google's own countTokens endpoint; without a key it falls back to an estimate, same as Claude, which has no public browser-side tokenizer.</div>
     </div>
   </section>
 

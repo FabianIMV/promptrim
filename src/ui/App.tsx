@@ -1,9 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import { compress, estimateCostSaved, estimateTokens, LEVELS } from '../core';
-import type { Level } from '../core';
+import {
+  allModels,
+  compress,
+  costForTokens,
+  countTokensForModel,
+  getModel,
+  LEVELS,
+  projectedMonthlyCost,
+} from '../core';
+import type { Level, ModelPricing, TokenCountResult } from '../core';
 import { aiCompress } from '../providers/gemini';
 
 const AI_MODE_STORAGE_KEY = 'promptrim.aiMode';
+const DEFAULT_MODEL_ID = 'claude-sonnet-5';
+const DEFAULT_CALLS_PER_DAY = 1000;
 
 const LEVEL_LABELS: Record<Level, string> = {
   light: 'Light',
@@ -11,10 +21,24 @@ const LEVEL_LABELS: Record<Level, string> = {
   aggressive: 'Aggressive',
 };
 
+const PROVIDER_LABELS: Record<ModelPricing['provider'], string> = {
+  anthropic: 'Anthropic',
+  openai: 'OpenAI',
+  gemini: 'Google Gemini',
+};
+
+const MODELS_BY_PROVIDER = allModels().reduce<Record<string, ModelPricing[]>>((acc, model) => {
+  (acc[model.provider] ??= []).push(model);
+  return acc;
+}, {});
+
+const NO_TOKENS: TokenCountResult = { tokens: 0, exact: false };
+
 interface Savings {
   pct: number;
   tokens: number;
-  cost: number;
+  costPerCall: number;
+  monthlyCost: number;
   changes: number;
   protectedRegions: number;
 }
@@ -29,7 +53,14 @@ export function App() {
   const [busy, setBusy] = useState(false);
   const [savings, setSavings] = useState<Savings | null>(null);
   const [copied, setCopied] = useState(false);
+  const [targetModelId, setTargetModelId] = useState(DEFAULT_MODEL_ID);
+  const [callsPerDay, setCallsPerDay] = useState(DEFAULT_CALLS_PER_DAY);
+  const [inTokenResult, setInTokenResult] = useState<TokenCountResult>(NO_TOKENS);
+  const [outTokenResult, setOutTokenResult] = useState<TokenCountResult>(NO_TOKENS);
   const apiKeyRef = useRef<HTMLInputElement>(null);
+
+  const targetModel = useMemo(() => getModel(targetModelId) ?? allModels()[0]!, [targetModelId]);
+  const geminiKeyForCounting = targetModel.provider === 'gemini' ? apiKey : undefined;
 
   useEffect(() => {
     try {
@@ -39,8 +70,25 @@ export function App() {
     }
   }, []);
 
-  const inTokens = useMemo(() => estimateTokens(input || ' '), [input]);
-  const outTokens = useMemo(() => estimateTokens(output), [output]);
+  useEffect(() => {
+    let cancelled = false;
+    countTokensForModel(input, targetModel, geminiKeyForCounting).then((result) => {
+      if (!cancelled) setInTokenResult(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [input, targetModel, geminiKeyForCounting]);
+
+  useEffect(() => {
+    let cancelled = false;
+    countTokensForModel(output, targetModel, geminiKeyForCounting).then((result) => {
+      if (!cancelled) setOutTokenResult(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [output, targetModel, geminiKeyForCounting]);
 
   const onToggleAi = useCallback((next: boolean) => {
     setAiMode(next);
@@ -90,14 +138,17 @@ export function App() {
 
       setOutput(result);
 
-      const before = estimateTokens(text);
-      const after = estimateTokens(result);
-      if (after < before) {
-        const saved = before - after;
+      const [before, after] = await Promise.all([
+        countTokensForModel(text, targetModel, geminiKeyForCounting),
+        countTokensForModel(result, targetModel, geminiKeyForCounting),
+      ]);
+      if (after.tokens < before.tokens) {
+        const saved = before.tokens - after.tokens;
         setSavings({
-          pct: Math.round((saved / before) * 100),
+          pct: Math.round((saved / before.tokens) * 100),
           tokens: saved,
-          cost: estimateCostSaved(saved),
+          costPerCall: costForTokens(saved, targetModel.input_per_mtok),
+          monthlyCost: projectedMonthlyCost(saved, targetModel.input_per_mtok, callsPerDay),
           changes,
           protectedRegions,
         });
@@ -111,7 +162,7 @@ export function App() {
     } finally {
       setBusy(false);
     }
-  }, [aiMode, apiKey, input, level]);
+  }, [aiMode, apiKey, input, level, targetModel, geminiKeyForCounting, callsPerDay]);
 
   const onCopy = useCallback(async () => {
     if (!output) return;
@@ -159,6 +210,47 @@ export function App() {
         </label>
       </div>
 
+      <div class="cost-row">
+        <label class="cost-field">
+          <span>Target model</span>
+          <select
+            aria-label="Target model for token counting and cost"
+            value={targetModelId}
+            onChange={(e) => setTargetModelId((e.currentTarget as HTMLSelectElement).value)}
+          >
+            {(Object.keys(MODELS_BY_PROVIDER) as ModelPricing['provider'][]).map((provider) => (
+              <optgroup key={provider} label={PROVIDER_LABELS[provider]}>
+                {MODELS_BY_PROVIDER[provider]!.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+        </label>
+        <label class="cost-field">
+          <span>Calls / day</span>
+          <input
+            type="number"
+            min="1"
+            step="1"
+            aria-label="Calls per day"
+            value={callsPerDay}
+            onInput={(e) => {
+              const value = Number((e.currentTarget as HTMLInputElement).value);
+              setCallsPerDay(Number.isFinite(value) && value > 0 ? value : 1);
+            }}
+          />
+        </label>
+        <span class="cost-hint">
+          Prices verified {targetModel.last_verified} ·{' '}
+          <a href={targetModel.source_url} target="_blank" rel="noopener noreferrer">
+            source
+          </a>
+        </span>
+      </div>
+
       <div class={`api-key-wrap${aiMode ? ' visible' : ''}`}>
         <input
           ref={apiKeyRef}
@@ -194,8 +286,12 @@ export function App() {
             <div class="saving-label">tokens removed</div>
           </div>
           <div class="saving-item">
-            <div class="saving-num">{savings ? `$${savings.cost.toFixed(4)}` : '—'}</div>
-            <div class="saving-label">est. cost saved (GPT-4o)</div>
+            <div class="saving-num">{savings ? `$${savings.costPerCall.toFixed(5)}` : '—'}</div>
+            <div class="saving-label">saved per call ({targetModel.label})</div>
+          </div>
+          <div class="saving-item">
+            <div class="saving-num">{savings ? `$${savings.monthlyCost.toFixed(2)}` : '—'}</div>
+            <div class="saving-label">saved / month @ {callsPerDay.toLocaleString()}/day</div>
           </div>
         </div>
         {savings && !aiMode && (
@@ -211,7 +307,10 @@ export function App() {
         <div class="panel">
           <div class="panel-header">
             <span class="panel-title">Original Prompt</span>
-            <span class="token-badge">{inTokens.toLocaleString()} tokens</span>
+            <span class="token-badge">
+              {inTokenResult.tokens.toLocaleString()} tokens
+              {inTokenResult.exact ? '' : ' (est.)'}
+            </span>
           </div>
           <textarea
             aria-label="Original prompt"
@@ -225,7 +324,8 @@ export function App() {
           <div class="panel-header">
             <span class="panel-title">Compressed Prompt</span>
             <span class={`token-badge${output ? ' improved' : ''}`}>
-              {output ? outTokens.toLocaleString() : 0} tokens
+              {output ? outTokenResult.tokens.toLocaleString() : 0} tokens
+              {output && !outTokenResult.exact ? ' (est.)' : ''}
             </span>
           </div>
           <textarea
