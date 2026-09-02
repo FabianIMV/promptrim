@@ -280,7 +280,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 
 | Fase | Estado | Fecha | PR | Notas |
 |------|--------|-------|----|-------|
-| 0 | Pendiente | | | |
+| 0 | ✅ Completada | 2026-09-02 | PENDING_PR | Scaffold Vite+TS+Preact+Vitest, segmentador de regiones protegidas, motor de reglas con `Change[]`, UI Preact con paridad. 299 tests. Ver 6.1. |
 | 1 | Pendiente | | | |
 | 2 | Pendiente | | | |
 | 3 | Pendiente | | | |
@@ -289,3 +289,60 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | 6 | Pendiente | | | |
 | 7 (opc.) | Pendiente | | | |
 | 8 (opc.) | Pendiente | | | |
+
+### 6.1 Fase 0 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-02): `npm run lint` ✅, `npm test` ✅ (299 tests, 5 archivos), `npm run build` ✅.
+Cobertura de `src/core/**`: 97,4% de sentencias. Lighthouse sobre el build (`vite preview`, Chrome headless):
+rendimiento **100**, SEO **100**, buenas prácticas **100**, accesibilidad **91**.
+Corpus de 10 prompts en `bench/corpus/phase0/`: **0 cambios dentro de regiones protegidas** en los tres niveles.
+
+**Decisiones de arquitectura tomadas en esta fase** (condicionan las siguientes):
+
+1. **Las reglas se evalúan contra el texto completo y después se descartan las coincidencias que tocan una
+   región protegida**, en lugar de evaluarlas segmento a segmento. El borde de un segmento no es un borde de
+   línea: en `escribe "please"` el espacio previo a la comilla queda al final de un segmento de texto pero en
+   mitad de su línea, y una regla anclada con `^`/`$` lo borraba. Fases 2-3 deben mantener este orden.
+2. **`compress()` devuelve `Change[]` con offsets sobre el original** y la salida es `applyChanges()`. La
+   reparación de mayúsculas se incorpora dentro del propio `Change` (extendiendo su rango), no como un pase
+   posterior, para que deshacer un cambio deshaga también su reparación y "deshacer todo" reproduzca el
+   original byte a byte (test ya presente; Fase 3 lo usará).
+3. **Semántica de niveles.** "Light = solo reglas no lossy" se implementa como invariante de una dirección,
+   verificada por test: *ninguna* regla de nivel `light` es lossy. Las sustituciones de equivalencia exacta
+   ("in order to" → "to") son no-lossy pero viven en `balanced`, para que Light siga devolviendo byte a byte
+   un prompt ya conciso. Light = normalización de formato; Balanced = + equivalencias exactas y marcos de
+   cortesía; Aggressive = + énfasis/hedges.
+4. **Registro de reglas descartadas** en `src/core/rules/discarded.ts` (12 entradas con motivo y ejemplo),
+   con un test que verifica que ninguna vuelve a colarse: `step by step`, `ensure/make sure to`, `always`,
+   `note that`, adjetivos de profundidad, deduplicación de frases, `feel free to`, `if possible`, `Thank you`,
+   `in a X manner`, `the following are`, `you are required to`.
+
+**Desviaciones respecto al plan:**
+
+- **Rama.** La sesión venía fijada a `claude/fase-0-fundacion-edku6m`, no a `feat/fase-0-fundacion`. El
+  contenido es el de la Fase 0; solo cambia el nombre de la rama.
+- **Comillas tipográficas.** La Sección 2 pide a la vez *proteger* los strings entre comillas tipográficas y
+  *normalizarlas* a ASCII. Son incompatibles para los delimitadores. Decisión: gana la protección. Solo se
+  normalizan el apóstrofo intrapalabra (`don’t` → `don't`) y los espacios no separables. Deuda menor.
+- **YAML "por forma" no implementado.** Solo se protege YAML dentro de fences. La heurística por forma
+  (`clave: valor` en líneas consecutivas) producía falsos positivos sobre prosa normal del tipo
+  `Note: do this`, que es exactamente el contenido que hay que poder comprimir. Deuda para Fase 2.
+- **Etiquetas `<tag>`.** Se protege la etiqueta en sí como variable, pero **no el contenido** entre
+  `<tag>…</tag>` salvo en `<example>`. El texto dentro de `<document>` sí se comprime. Revisar en Fase 2, donde
+  el ledger decidirá si ese contenido es dato del usuario.
+- **Aggressive todavía no está bloqueado por el ledger** (depende de la Fase 2). Mientras tanto se mantiene
+  seguro por construcción: el set agresivo se limita a intensificadores, hedges y marcos, nunca a palabras de
+  instrucción, y está cubierto por el registro de reglas descartadas.
+- **Tokens y coste siguen siendo la heurística legada** (`chars/4`, GPT-4o a $2,50/M de 2024). Se aislaron en
+  `src/core/estimate.ts`, marcados `@deprecated`, para que la Fase 1 los sustituya en un solo sitio. El dato
+  "70% avg token savings" del hero **se deja intacto a propósito**: su eliminación es la tarea 6 de la Fase 1.
+- **Extra respecto a las tareas listadas:** se añadió `.github/workflows/ci.yml` (lint + test + build en cada
+  PR). `deploy.yml` ahora hace `npm ci`, verifica y publica `dist/`.
+
+**Deuda pendiente que hereda la Fase 1:**
+
+- Accesibilidad 91 en Lighthouse por dos auditorías **preexistentes** de la landing (`color-contrast` y
+  `link-in-text-block`). El objetivo ≥95 es de la Fase 6, pero conviene no empeorarlo antes.
+- `src/core/index.ts` y `estimate.ts` sin cobertura directa (son reexportes y el placeholder de la Fase 1).
+- El corpus de la Fase 0 (10 prompts) está en `bench/corpus/phase0/` para que el corpus anotado de 30 prompts
+  de la Fase 2 pueda convivir en `bench/corpus/` sin colisiones.

@@ -1,0 +1,7 @@
+dist
+node_modules
+coverage
+public
+bench/corpus
+*.md
+index.html
