@@ -8,6 +8,11 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
+    // The o200k_base tokenizer rank file (~2.3 MB) is intentionally lazy —
+    // dynamically imported only when OpenAI token counting runs, never part
+    // of the initial bundle. Raise the warning limit so that expected,
+    // code-split chunk doesn't produce build noise.
+    chunkSizeWarningLimit: 2500,
   },
   test: {
     environment: 'node',

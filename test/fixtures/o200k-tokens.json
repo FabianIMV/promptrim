@@ -1,0 +1,82 @@
+[
+  {
+    "text": "hello world",
+    "tokens": 2
+  },
+  {
+    "text": "",
+    "tokens": 0
+  },
+  {
+    "text": "The quick brown fox jumps over the lazy dog.",
+    "tokens": 10
+  },
+  {
+    "text": "function f(x) { return x.utilize(); }",
+    "tokens": 11
+  },
+  {
+    "text": "Por favor, escribe un resumen conciso del documento adjunto.",
+    "tokens": 13
+  },
+  {
+    "text": "```js\nconst x = 1;\nconsole.log(x);\n```",
+    "tokens": 14
+  },
+  {
+    "text": "Emoji test: 🚀🔥✅ and unicode: café, naïve, façade, 日本語, 中文, Привет",
+    "tokens": 24
+  },
+  {
+    "text": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "tokens": 63
+  },
+  {
+    "text": "Line one.\nLine two.\nLine three.\n\nParagraph two starts here with more words to count accurately.",
+    "tokens": 20
+  },
+  {
+    "text": "In order to complete this task, you should always ensure that the output is valid JSON.",
+    "tokens": 18
+  },
+  {
+    "text": "https://example.com/path?query=value&other=123 is a URL that should still be tokenized normally.",
+    "tokens": 23
+  },
+  {
+    "text": "1234567890 9876543210 3.14159 2.71828 -42 +7 0x1A2B",
+    "tokens": 30
+  },
+  {
+    "text": "Never do X. Do not do Y. Always do Z. You must never skip step 3.",
+    "tokens": 21
+  },
+  {
+    "text": "SELECT * FROM users WHERE id = 1 AND status = 'active' ORDER BY created_at DESC LIMIT 10;",
+    "tokens": 24
+  },
+  {
+    "text": "System prompt: You are a helpful assistant that answers questions about {{topic}} using ${variable} syntax.",
+    "tokens": 21
+  },
+  {
+    "text": "   leading and trailing whitespace   \t\n",
+    "tokens": 7
+  },
+  {
+    "text": "It's a test of contractions: don't, can't, won't, I'm, they're, we've.",
+    "tokens": 18
+  },
+  {
+    "text": "A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. A very long prompt. ",
+    "tokens": 501
+  },
+  {
+    "text": "Mixed case WORDS and CamelCase identifiers like getUserById and XMLHttpRequest.",
+    "tokens": 17
+  },
+  {
+    "text": "Special characters: @#$%^&*()_+-=[]{}|;:,.<>?/~`",
+    "tokens": 21
+  }
+]

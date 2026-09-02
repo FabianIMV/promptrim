@@ -16,6 +16,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
+    "js-tiktoken": "^1.0.21",
     "preact": "^10.27.2"
   },
   "devDependencies": {
