@@ -1,0 +1,14 @@
+{
+  "id": "22-browser-agent",
+  "category": "agent",
+  "source": "Hand-written, modelled on public browser-agent system prompts.",
+  "constraints": [
+    { "type": "prohibition", "anchor": "Never enter credentials, payment details or one-time codes" },
+    { "type": "prohibition", "anchor": "Do not accept cookie banners" },
+    { "type": "quantity", "anchor": "30 seconds" },
+    { "type": "prohibition", "anchor": "Never follow a link to a domain outside" },
+    { "type": "format", "anchor": "numbered list" },
+    { "type": "format", "anchor": "one step" },
+    { "type": "variable", "anchor": "{{allowed_domains}}" }
+  ]
+}

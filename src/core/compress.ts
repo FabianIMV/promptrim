@@ -15,6 +15,8 @@ import type { ProtectedRange, Segment } from './segment';
 import { rulesForLevel, ALL_RULES } from './rules';
 import type { Level, Rule } from './rules/types';
 import { resolveReplacement } from './rules/types';
+import { extractConstraints, verifyConstraints } from './ledger';
+import type { Constraint, LedgerReport } from './ledger';
 
 export interface Change {
   ruleId: string;
@@ -28,11 +30,27 @@ export interface Change {
   capitalised?: boolean;
 }
 
+/** A change the ledger reverted because it would have dropped a constraint. */
+export interface BlockedChange extends Change {
+  /** Ids of the `critical` constraints that failed while this change applied. */
+  constraintIds: string[];
+}
+
 export interface CompressResult {
   output: string;
   changes: Change[];
   segments: Segment[];
   level: Level;
+  /**
+   * Changes reverted by the ledger. Non-empty only when enforcement ran, and
+   * surfaced in the UI as "blocked by the ledger" so that a user can see why
+   * Aggressive did not compress further.
+   */
+  blocked: BlockedChange[];
+  /** The inventory enforcement ran against; `null` when it did not run. */
+  constraints: Constraint[] | null;
+  /** Verification of the final output; `null` when enforcement did not run. */
+  ledger: LedgerReport | null;
 }
 
 export interface CompressOptions {
@@ -40,6 +58,14 @@ export interface CompressOptions {
   rules?: Rule[];
   /** Rule ids to skip (Phase 3 will wire this to the UI rule panel). */
   disabledRuleIds?: readonly string[];
+  /**
+   * Revert any change that makes a `critical` constraint fail verification.
+   * Defaults to `true` at `aggressive` and `false` below it, per docs/PLAN.md
+   * Phase 2 task 3. Set explicitly to enforce (or skip) at any level.
+   */
+  enforceLedger?: boolean;
+  /** Reuse an inventory the caller already extracted. */
+  constraints?: Constraint[];
 }
 
 /** Rebuild a string from the original plus a set of changes. */
@@ -103,17 +129,92 @@ export function compress(
       b.end - a.end,
   );
 
-  const changes: Change[] = [];
+  const selected: Change[] = [];
   let lastEnd = -1;
   for (const candidate of candidates) {
     if (candidate.start < lastEnd) continue;
-    changes.push(candidate);
+    selected.push(candidate);
     lastEnd = candidate.end;
   }
 
-  repairCapitalisation(input, changes, ranges);
+  // Capitalisation repair mutates the changes it fixes, so the ledger works on
+  // the raw selection and re-projects it each round; otherwise reverting a
+  // change would leave the capitalisation it carried to its neighbour behind.
+  const project = (raw: readonly Change[]): { changes: Change[]; output: string } => {
+    const cloned = raw.map((c) => ({ ...c }));
+    repairCapitalisation(input, cloned, ranges);
+    return { changes: cloned, output: applyChanges(input, cloned) };
+  };
 
-  return { output: applyChanges(input, changes), changes, segments, level };
+  const enforce = options.enforceLedger ?? level === 'aggressive';
+  if (!enforce) {
+    const { changes, output } = project(selected);
+    return { output, changes, segments, level, blocked: [], constraints: null, ledger: null };
+  }
+
+  const constraints = options.constraints ?? extractConstraints(input, { ranges });
+  const { kept, blocked } = enforceLedger(input, selected, constraints, project);
+  const { changes, output } = project(kept);
+  return {
+    output,
+    changes,
+    segments,
+    level,
+    blocked,
+    constraints,
+    ledger: verifyConstraints(input, output, constraints),
+  };
+}
+
+/** Rounds of revert-and-recheck before giving up and reporting the ✗ as-is. */
+const MAX_LEDGER_ROUNDS = 5;
+
+/**
+ * Drop every change that keeps a `critical` constraint from verifying.
+ *
+ * Blame is assigned by overlap: the changes inside the constraint's anchor
+ * first, and only if none overlaps, the changes inside its sentence. A failure
+ * that no change touches is left failing rather than guessed at — the UI shows
+ * the ✗, which is the honest outcome.
+ */
+function enforceLedger(
+  input: string,
+  selected: readonly Change[],
+  constraints: readonly Constraint[],
+  project: (raw: readonly Change[]) => { output: string },
+): { kept: Change[]; blocked: BlockedChange[] } {
+  const critical = constraints.filter((c) => c.severity === 'critical');
+  let kept = [...selected];
+  const blocked: BlockedChange[] = [];
+  if (critical.length === 0 || kept.length === 0) return { kept, blocked };
+
+  for (let round = 0; round < MAX_LEDGER_ROUNDS; round++) {
+    const report = verifyConstraints(input, project(kept).output, critical);
+    if (report.criticalLost.length === 0) break;
+
+    const culprits = new Map<Change, Set<string>>();
+    for (const check of report.criticalLost) {
+      const { start, end, sentenceStart, sentenceEnd, id } = check.constraint;
+      let touching = kept.filter((c) => c.start < end && start < c.end);
+      if (touching.length === 0) {
+        touching = kept.filter((c) => c.start < sentenceEnd && sentenceStart < c.end);
+      }
+      for (const change of touching) {
+        const ids = culprits.get(change) ?? new Set<string>();
+        ids.add(id);
+        culprits.set(change, ids);
+      }
+    }
+    if (culprits.size === 0) break;
+
+    for (const [change, ids] of culprits) {
+      blocked.push({ ...change, constraintIds: [...ids] });
+    }
+    kept = kept.filter((c) => !culprits.has(c));
+  }
+
+  blocked.sort((a, b) => a.start - b.start);
+  return { kept, blocked };
 }
 
 function ensureGlobal(flags: string): string {

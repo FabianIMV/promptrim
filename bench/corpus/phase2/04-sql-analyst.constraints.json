@@ -1,0 +1,18 @@
+{
+  "id": "04-sql-analyst",
+  "category": "data",
+  "source": "Hand-written, modelled on public text-to-SQL system prompts.",
+  "constraints": [
+    { "type": "requirement", "anchor": "Only use the tables listed in the schema block" },
+    { "type": "prohibition", "anchor": "Never invent a column" },
+    { "type": "requirement", "anchor": "must include an explicit LIMIT" },
+    { "type": "quantity", "anchor": "1000 rows" },
+    { "type": "prohibition", "anchor": "Do not use SELECT" },
+    { "type": "requirement", "anchor": "must use the column" },
+    { "type": "prohibition", "anchor": "Never issue DELETE, UPDATE, DROP or TRUNCATE" },
+    { "type": "format", "anchor": "code block" },
+    { "type": "format", "anchor": "2 sentence" },
+    { "type": "entity", "anchor": "event_date" },
+    { "type": "literal", "anchor": "\"Not answerable with this schema\"" }
+  ]
+}

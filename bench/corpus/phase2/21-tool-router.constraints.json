@@ -1,0 +1,67 @@
+{
+  "id": "21-tool-router",
+  "category": "agent",
+  "source": "Hand-written, modelled on public tool-routing prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "exactly one tool"
+    },
+    {
+      "type": "requirement",
+      "anchor": "only when the user explicitly asks to send a message"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never send an email to more than 5 recipients"
+    },
+    {
+      "type": "quantity",
+      "anchor": "5 recipients"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never call run_sql with a statement that writes"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not call two tools in the same turn"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must fill every required argument"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "never leave one empty"
+    },
+    {
+      "type": "format",
+      "anchor": "JSON object"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never wrap the JSON in a code fence"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"tool\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"arguments\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"why\""
+    },
+    {
+      "type": "variable",
+      "anchor": "<name>"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"<10 words max>\""
+    }
+  ]
+}

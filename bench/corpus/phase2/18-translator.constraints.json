@@ -1,0 +1,47 @@
+{
+  "id": "18-translator",
+  "category": "writing",
+  "source": "Hand-written, modelled on public translation system prompts.",
+  "constraints": [
+    {
+      "type": "prohibition",
+      "anchor": "Never add or remove information"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not translate text inside code blocks"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must stay in English"
+    },
+    {
+      "type": "format",
+      "anchor": "in English"
+    },
+    {
+      "type": "instruction",
+      "anchor": "Keep every markdown link target unchanged"
+    },
+    {
+      "type": "requirement",
+      "anchor": "only the translation"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never include the source text in the reply"
+    },
+    {
+      "type": "variable",
+      "anchor": "{{target_language}}"
+    },
+    {
+      "type": "variable",
+      "anchor": "{user_name}"
+    },
+    {
+      "type": "literal",
+      "anchor": "https://northwind.example/docs"
+    }
+  ]
+}

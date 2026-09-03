@@ -1,0 +1,18 @@
+{
+  "id": "20-email-drafter",
+  "category": "writing",
+  "source": "Hand-written, modelled on public sales-email prompts.",
+  "constraints": [
+    { "type": "requirement", "anchor": "Always use the recipient's first name" },
+    { "type": "prohibition", "anchor": "Never use" },
+    { "type": "format", "anchor": "3 short paragraphs" },
+    { "type": "format", "anchor": "under 120 words" },
+    { "type": "prohibition", "anchor": "Do not attach files" },
+    { "type": "prohibition", "anchor": "do not promise pricing that is not in the price list" },
+    { "type": "prohibition", "anchor": "Never use exclamation marks" },
+    { "type": "requirement", "anchor": "only the email body" },
+    { "type": "prohibition", "anchor": "do not include a subject line unless the user asks for one" },
+    { "type": "variable", "anchor": "{{sender_name}}" },
+    { "type": "literal", "anchor": "\"Dear Sir or Madam\"" }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "17-summarizer-meeting",
+  "category": "writing",
+  "source": "Hand-written, modelled on public meeting-summary prompts.",
+  "constraints": [
+    { "type": "requirement", "anchor": "must name an owner and a due date" },
+    { "type": "prohibition", "anchor": "never guess an owner" },
+    { "type": "prohibition", "anchor": "Do not include small talk" },
+    { "type": "prohibition", "anchor": "Never attribute a statement to a speaker who did not make it" },
+    { "type": "format", "anchor": "under 250 words" },
+    { "type": "format", "anchor": "bullet points" },
+    { "type": "format", "anchor": "one line" },
+    { "type": "variable", "anchor": "{{transcript}}" },
+    { "type": "literal", "anchor": "\"unassigned\"" }
+  ]
+}

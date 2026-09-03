@@ -1,0 +1,79 @@
+{
+  "id": "11-support-refunds",
+  "category": "support",
+  "source": "Hand-written, modelled on public refund-policy assistant prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "only when all of these hold"
+    },
+    {
+      "type": "quantity",
+      "anchor": "30 days"
+    },
+    {
+      "type": "quantity",
+      "anchor": "$200"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never approve a refund for a digital download"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not tell the customer the internal fraud score"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must record the reason code"
+    },
+    {
+      "type": "format",
+      "anchor": "with JSON"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must be at most 60 words"
+    },
+    {
+      "type": "format",
+      "anchor": "60 words"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "must not mention internal policy names"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"decision\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"approve\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"deny\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"escalate\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"reason_code\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"message\""
+    },
+    {
+      "type": "variable",
+      "anchor": "<code>"
+    },
+    {
+      "type": "variable",
+      "anchor": "<text to the customer>"
+    }
+  ]
+}

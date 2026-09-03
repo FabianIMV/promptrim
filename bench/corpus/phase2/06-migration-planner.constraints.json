@@ -1,0 +1,15 @@
+{
+  "id": "06-migration-planner",
+  "category": "data",
+  "source": "Hand-written, modelled on public zero-downtime migration guidance.",
+  "constraints": [
+    { "type": "requirement", "anchor": "must be backwards compatible" },
+    { "type": "quantity", "anchor": "2 migrations" },
+    { "type": "quantity", "anchor": "24 hours" },
+    { "type": "prohibition", "anchor": "Never drop a column in the same release" },
+    { "type": "prohibition", "anchor": "Do not add a NOT NULL column without a default" },
+    { "type": "quantity", "anchor": "50000000 rows" },
+    { "type": "format", "anchor": "numbered list" },
+    { "type": "prohibition", "anchor": "Do not use tables" }
+  ]
+}

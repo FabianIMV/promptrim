@@ -1,0 +1,51 @@
+{
+  "id": "07-rag-doc-qa",
+  "category": "rag",
+  "source": "Hand-written, modelled on public grounded-QA system prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "only the passages"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never use knowledge from outside the passages"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not guess"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must end with a citation"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not cite a document you did not use"
+    },
+    {
+      "type": "format",
+      "anchor": "under 150 words"
+    },
+    {
+      "type": "format",
+      "anchor": "in the same language"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"I could not find this in the provided documents.\""
+    },
+    {
+      "type": "variable",
+      "anchor": "{{retrieved_passages}}"
+    },
+    {
+      "type": "variable",
+      "anchor": "<documents>"
+    },
+    {
+      "type": "variable",
+      "anchor": "</documents>"
+    }
+  ]
+}

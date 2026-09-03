@@ -1,0 +1,21 @@
+{
+  "id": "12-support-escalation",
+  "category": "support",
+  "source": "Hand-written, modelled on public escalation-routing prompts.",
+  "constraints": [
+    { "type": "quantity", "anchor": "3 times" },
+    { "type": "quantity", "anchor": "15 minutes" },
+    { "type": "prohibition", "anchor": "Never escalate a billing question" },
+    { "type": "prohibition", "anchor": "Do not reveal that an escalation happened" },
+    { "type": "format", "anchor": "in JSON" },
+    { "type": "requirement", "anchor": "must be one sentence" },
+    { "type": "format", "anchor": "one sentence" },
+    { "type": "requirement", "anchor": "must be written in the customer's language" },
+    { "type": "literal", "anchor": "\"lawyer\"" },
+    { "type": "literal", "anchor": "\"chargeback\"" },
+    { "type": "literal", "anchor": "\"cancel my contract\"" },
+    { "type": "literal", "anchor": "\"escalate\"" },
+    { "type": "literal", "anchor": "\"trigger\"" },
+    { "type": "literal", "anchor": "\"summary\"" }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "16-moderation",
+  "category": "safety",
+  "source": "Hand-written, modelled on public content-moderation prompts.",
+  "constraints": [
+    { "type": "requirement", "anchor": "only when it contains a direct threat" },
+    { "type": "prohibition", "anchor": "never remove a post because you disagree with its opinion" },
+    { "type": "prohibition", "anchor": "Do not moderate based on the political affiliation of the author" },
+    { "type": "requirement", "anchor": "must cite the exact phrase" },
+    { "type": "format", "anchor": "at most 20 words" },
+    { "type": "prohibition", "anchor": "Never quote a phrase that contains personal data" },
+    { "type": "format", "anchor": "Return JSON" },
+    { "type": "literal", "anchor": "\"label\"" },
+    { "type": "literal", "anchor": "\"rule\"" },
+    { "type": "literal", "anchor": "\"evidence\"" }
+  ]
+}

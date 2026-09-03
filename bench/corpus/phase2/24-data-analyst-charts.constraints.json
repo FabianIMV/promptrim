@@ -1,0 +1,19 @@
+{
+  "id": "24-data-analyst-charts",
+  "category": "data",
+  "source": "Hand-written, modelled on public chart-specification prompts.",
+  "constraints": [
+    { "type": "prohibition", "anchor": "never a pie" },
+    { "type": "prohibition", "anchor": "Never plot more than 8 series on one chart" },
+    { "type": "quantity", "anchor": "8 series" },
+    { "type": "requirement", "anchor": "must always be labelled" },
+    { "type": "requirement", "anchor": "must start at 0 for bar charts" },
+    { "type": "prohibition", "anchor": "Do not use a dual y axis" },
+    { "type": "format", "anchor": "as JSON" },
+    { "type": "prohibition", "anchor": "Do not add commentary" },
+    { "type": "format", "anchor": "at most 12 words" },
+    { "type": "format", "anchor": "at most 40 words" },
+    { "type": "literal", "anchor": "\"title\"" },
+    { "type": "literal", "anchor": "\"alt\"" }
+  ]
+}

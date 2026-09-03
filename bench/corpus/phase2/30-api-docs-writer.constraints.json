@@ -1,0 +1,51 @@
+{
+  "id": "30-api-docs-writer",
+  "category": "code",
+  "source": "Hand-written, modelled on public API-documentation prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "must document"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never document a parameter that does not exist in the code"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not omit a required parameter"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must be a runnable curl command"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must be listed in ascending numeric order"
+    },
+    {
+      "type": "quantity",
+      "anchor": "400"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not use future tense"
+    },
+    {
+      "type": "format",
+      "anchor": "2 sentences"
+    },
+    {
+      "type": "format",
+      "anchor": "markdown"
+    },
+    {
+      "type": "literal",
+      "anchor": "https://api.example.com"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"will return\""
+    }
+  ]
+}

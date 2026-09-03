@@ -1,0 +1,59 @@
+{
+  "id": "05-commit-message",
+  "category": "code",
+  "source": "Hand-written, modelled on public commit-message prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "must be at most 72 characters"
+    },
+    {
+      "type": "format",
+      "anchor": "72 characters"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must start with one of"
+    },
+    {
+      "type": "instruction",
+      "anchor": "Use the imperative mood"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never mention the tool that generated the change"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not include a body"
+    },
+    {
+      "type": "quantity",
+      "anchor": "10 lines"
+    },
+    {
+      "type": "quantity",
+      "anchor": "72 columns"
+    },
+    {
+      "type": "requirement",
+      "anchor": "only the commit message"
+    },
+    {
+      "type": "format",
+      "anchor": "no preamble"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"add\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"added\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"adds\""
+    }
+  ]
+}
