@@ -282,7 +282,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 |------|--------|-------|----|-------|
 | 0 | ✅ Completada | 2026-09-02 | [#9](https://github.com/FabianIMV/promptrim/pull/9) | Scaffold Vite+TS+Preact+Vitest, segmentador de regiones protegidas, motor de reglas con `Change[]`, UI Preact con paridad. 299 tests. Ver 6.1. |
 | 1 | ✅ Completada | 2026-09-02 | [#10](https://github.com/FabianIMV/promptrim/pull/10) | Tokenizador exacto o200k (`js-tiktoken`, lazy), estimador calibrado para Claude, `countTokens` real de Gemini con fallback, `data/pricing.json` verificado hoy en las 3 webs oficiales, UI con selector de modelo objetivo, campo llamadas/día y proyección mensual. 343 tests (+44). Ver 6.2. |
-| 2 | Pendiente | | | |
+| 2 | ✅ Completada | 2026-09-03 | [#11](https://github.com/FabianIMV/promptrim/pull/11) | `core/ledger/` (extracción, verificación, duplicados, restauración), veto del ledger sobre `compress()` en Aggressive, panel "Verification" en la UI y corpus anotado de 30 prompts en `bench/corpus/phase2/`. Recall 98,8% y precisión 88,1% sobre 327 restricciones críticas anotadas; 0 falsos "preservado". 737 tests (+394). Ver 6.3. |
 | 3 | Pendiente | | | |
 | 4 | Pendiente | | | |
 | 5 | Pendiente | | | |
@@ -428,3 +428,106 @@ mensual funcionan sin errores de consola (capturas en la sesión, no versionadas
   Gemini.
 - El selector de modelo vive en `App.tsx` sin persistencia (no se guarda en `localStorage` como si ocurre con
   el modo IA); evaluar si vale la pena en una fase de UI posterior.
+
+### 6.3 Fase 2 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-03): `npm run lint` ✅, `npm test` ✅ (737 tests, 17 archivos),
+`npm run build` ✅. Bundle inicial: 25,21 kB gzip (`index-*.js`), frente a 17,92 kB gzip al cerrar la Fase 1
+(+7,3 kB gzip: el ledger entero, sin dependencias nuevas — `package.json` no cambia en esta fase). Smoke test
+manual con Playwright + Chromium headless contra `vite preview`: se pega un system prompt con variables,
+literales, prohibiciones y límites, se comprime en Aggressive y el panel muestra "16/16 constraints preserved ·
+11/11 critical" agrupado por tipo, sin errores de consola (captura en la sesión, no versionada).
+
+**Resultados sobre el corpus anotado** (`bench/corpus/phase2/`, 30 prompts, 327 restricciones críticas
+anotadas a mano; tabla por tipo en `bench/corpus/phase2/README.md`):
+
+| Criterio de aceptación de la fase | Objetivo | Medido |
+|---|---|---|
+| Recall en restricciones `critical` | ≥ 90% | **98,8%** |
+| Falsos "preservado" al borrar la frase | 0 | **0** (30 prompts × todas sus críticas, borrando la frase y borrando solo el ancla) |
+| Tests por tipo de restricción | uno por tipo | 9 tipos cubiertos en `test/ledger-extract.test.ts` |
+
+Precisión medida: 88,1%. No es criterio de aceptación y se mantiene deliberadamente en segundo plano: una
+restricción de más cuesta compresión (puede vetar un cambio legítimo en Aggressive), una de menos cuesta la
+promesa entera del producto.
+
+**Decisiones tomadas en esta fase** (condicionan las siguientes):
+
+1. **Vocabulario licenciado en vez de comparación literal.** Verificar comparando el ancla con la salida tal
+   cual sería inútil: el compresor tiene permiso para reescribir "in order to" → "to" y para borrar "please".
+   `ledger/normalize.ts` reduce ambos lados a tokens ignorando exactamente tres cosas — mayúsculas/puntuación,
+   las equivalencias no-lossy de `SUBSTITUTION_RULES`, y una lista cerrada de muletillas (cortesía, marcos de
+   petición, intensificadores). **Todo lo demás que falte es un fallo**, aunque el significado sobreviva. La
+   asimetría es intencionada: un ✗ de más cuesta compresión, un ✓ de más cuesta la confianza.
+   `test/ledger-normalize.test.ts` fija esa lista al conjunto de reglas: **toda** regla de borrado enviada debe
+   reducir su entrada y su salida a los mismos tokens. Una regla que borrase algo fuera del vocabulario haría
+   fallar ese test — y sería revertida por el ledger en Aggressive.
+2. **Conteo de ocurrencias, no presencia.** Una restricción pasa solo si su ancla normalizada aparece en la
+   salida **al menos tantas veces** como en la entrada. Si un prompt dice "never reveal the key" dos veces y la
+   compresión borra una, la comprobación por presencia seguiría diciendo ✓; el conteo dice ✗.
+3. **Las anclas son núcleos, no frases.** El ancla de una prohibición empieza en "never", no en "Please
+   remember that you should never". Si el marco entrase en el ancla, cualquier compresión legal se leería como
+   pérdida. Por el mismo motivo, un marcador que cae **dentro** de una muletilla licenciada no genera
+   restricción: el "should" de "It should be noted that limits apply" pertenece al envoltorio que el compresor
+   puede borrar (esto rompía un test de la Fase 0 hasta que se añadió el filtro `fillerRanges`).
+4. **`requirement` se clasifica como `critical`**, ampliando la lista de la tarea 2 del plan (que nombra
+   prohibition, format, literal, variable y quantity). Perder "reply only in English" corrompe un prompt tanto
+   como perder "never reveal the key", y ninguna regla enviada borra palabras de requisito, así que la
+   clasificación más estricta no cuesta compresión. El criterio de aceptación se midió con esta lista ampliada,
+   es decir, sobre más restricciones de las que el plan exigía.
+5. **El veto se aplica sobre la selección cruda de cambios, no sobre la proyectada.** La reparación de
+   mayúsculas de la Fase 0 muta los `Change` y puede trasladar una mayúscula al cambio siguiente; revertir un
+   cambio ya reparado dejaría esa mayúscula huérfana. `compress()` guarda la selección cruda y la vuelve a
+   proyectar (`clonar → reparar → aplicar`) en cada ronda del ledger. Fase 3 debe mantener ese orden.
+6. **Cuando ningún cambio explica un fallo, el fallo se muestra.** El veto atribuye la culpa por solapamiento
+   (primero los cambios dentro del ancla, si no los de su frase) y como mucho 5 rondas. Si un `critical` sigue
+   fallando y no hay cambio al que culpar, no se adivina: se deja el ✗ en el checklist.
+7. **`compress()` devuelve `blocked`, `constraints` y `ledger`**, y `constraints`/`ledger` son `null` cuando el
+   veto no corrió (por defecto solo corre en Aggressive). La UI puede reutilizar el inventario ya calculado en
+   vez de extraerlo dos veces; `buildLedger()` acepta `{ constraints }` para eso.
+
+**Desviaciones respecto al plan:**
+
+- **Rama.** La sesión venía fijada a `claude/fase-2-ledger-t7n1ti`, no a `feat/fase-2-ledger`. Mismo contenido,
+  distinto nombre de rama (igual que en las fases 0 y 1).
+- **Corpus escrito a mano, no copiado.** La tarea 6 pide "system prompts reales de proyectos open source". Los
+  30 prompts están **escritos para este repositorio**, modelados sobre los patrones que usan los system prompts
+  públicos de cada oficio; cada anotación declara en `source` sobre qué se modeló. Copiar prompts ajenos
+  literalmente metería texto de terceros bajo la licencia de este repo sin ninguna ganancia de medición.
+- **Anotación exhaustiva solo en los tipos `critical`.** `instruction`, `entity` y `example` son `minor`, su
+  detección es léxica por construcción (no hay etiquetador morfosintáctico en el bundle) y anotarlos de forma
+  incompleta mediría la anotación, no el extractor. Están excluidos de la métrica y así se documenta en
+  `bench/corpus/phase2/README.md`.
+- **Con las reglas enviadas, el ledger no bloquea nada.** Es la consecuencia lógica de la decisión 1 (el
+  vocabulario licenciado *es* lo que las reglas borran) y de la política de la Sección 2, y hay un test que lo
+  afirma sobre los 30 prompts. Para que el mecanismo de veto no fuese código muerto se ejercita en
+  `test/compress-ledger.test.ts` con una regla deliberadamente insegura (`unsafe.drop-never`) inyectada por
+  `options.rules`. Donde el veto sí tendrá trabajo real es en el modo IA de la Fase 5 y en las reglas que el
+  usuario active en la Fase 3.
+- **El botón "Restaurar" está cubierto por tests unitarios, no por el smoke test de navegador.** En modo rápido
+  el ledger nunca pierde nada, así que el botón no llega a renderizarse sin una clave de IA; `restoreConstraint`
+  tiene 8 tests, incluido uno que parte de una compresión real dañada a propósito.
+- **YAML "por forma" sigue sin implementarse** (deuda heredada de la Fase 0 y anotada allí para esta fase). El
+  ledger no cambia la decisión: seguir sin protegerlo es correcto mientras la heurística produzca falsos
+  positivos sobre prosa (`Note: do this`), y ahora además el inventario de `format`/`literal` cubre buena parte
+  de lo que un bloque YAML suelto aportaría. Se mantiene como deuda.
+- **Contenido de `<tag>…</tag>`** (otra deuda de la Fase 0): el ledger no lo reclasifica. La etiqueta sigue
+  protegida como `variable` y su contenido sigue siendo comprimible, que es lo correcto para
+  `<documents>{{passages}}</documents>`: el dato viene de una variable, no del texto entre etiquetas.
+
+**Deuda pendiente que hereda la Fase 3:**
+
+- El panel de verificación crece mucho en prompts largos (un ítem por restricción, sin plegar). La Fase 3, que
+  rehace la UI alrededor del diff, debería agrupar/plegar por tipo y enlazar cada ✓/✗ con su posición en el
+  diff.
+- `blocked` ya se muestra como lista simple; la Fase 3 la pide integrada en la vista de diff ("cambios
+  bloqueados por el ledger").
+- El extractor es **solo inglés**. Un prompt en español no produce prohibiciones ni requisitos. La Fase 6 añade
+  i18n en/es y debería ampliar los léxicos (`PROHIBITION_RE`, `REQUIREMENT_RE`, `IMPERATIVE_VERBS`) o el
+  criterio de aceptación de esa fase quedará vacío en español.
+- Precisión de `quantity` (62,9%): el patrón genérico "número + sustantivo" recoge cosas como "16 warehouse" de
+  "a Postgres 16 warehouse". No rompe nada (una restricción de más solo puede vetar un cambio), pero ensucia el
+  checklist.
+- `extractConstraints` recorre el texto una vez por patrón (unos 30 `matchAll` sobre el prompt completo) y el
+  veto lo re-verifica hasta 5 veces. Es instantáneo en prompts de system (miles de caracteres) y no se optimizó;
+  si la Fase 6 añade modo lote, conviene medirlo antes.

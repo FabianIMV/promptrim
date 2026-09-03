@@ -1,0 +1,19 @@
+{
+  "id": "01-coding-agent",
+  "category": "agent",
+  "source": "Hand-written, modelled on public coding-agent system prompts.",
+  "constraints": [
+    { "type": "prohibition", "anchor": "Never commit directly to main" },
+    { "type": "requirement", "anchor": "Always work on a feature branch" },
+    { "type": "prohibition", "anchor": "Do not create a pull request unless the user explicitly asks for one" },
+    { "type": "requirement", "anchor": "must run" },
+    { "type": "prohibition", "anchor": "Never write secrets, tokens or API keys into the repository" },
+    { "type": "format", "anchor": "400 lines" },
+    { "type": "format", "anchor": "in markdown" },
+    { "type": "format", "anchor": "three sections" },
+    { "type": "format", "anchor": "in the user's language" },
+    { "type": "literal", "anchor": "\"Changes\"" },
+    { "type": "literal", "anchor": "\"Verification\"" },
+    { "type": "literal", "anchor": "\"Risks\"" }
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "id": "03-test-generator",
+  "category": "code",
+  "source": "Hand-written, modelled on public test-generation prompts.",
+  "constraints": [
+    {
+      "type": "prohibition",
+      "anchor": "never re-implement it in the test file"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must contain at least 3 cases"
+    },
+    {
+      "type": "format",
+      "anchor": "3 cases"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not use snapshot tests"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not mock the module under test"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must be specific"
+    },
+    {
+      "type": "requirement",
+      "anchor": "only the test file"
+    },
+    {
+      "type": "format",
+      "anchor": "code block"
+    },
+    {
+      "type": "format",
+      "anchor": "no commentary"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"it('<verb> <expected outcome> when <condition>')\""
+    },
+    {
+      "type": "variable",
+      "anchor": "<verb>"
+    },
+    {
+      "type": "variable",
+      "anchor": "<expected outcome>"
+    },
+    {
+      "type": "variable",
+      "anchor": "<condition>"
+    }
+  ]
+}

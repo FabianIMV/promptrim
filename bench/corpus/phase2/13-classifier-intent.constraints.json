@@ -1,0 +1,51 @@
+{
+  "id": "13-classifier-intent",
+  "category": "classification",
+  "source": "Hand-written, modelled on public intent-classification prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "exactly one intent"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never invent an intent that is not in the list"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not explain your reasoning"
+    },
+    {
+      "type": "quantity",
+      "anchor": "2 decimal places"
+    },
+    {
+      "type": "quantity",
+      "anchor": "0.60"
+    },
+    {
+      "type": "format",
+      "anchor": "JSON object"
+    },
+    {
+      "type": "format",
+      "anchor": "Return nothing else"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"needs_review\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"intent\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"billing\""
+    },
+    {
+      "type": "literal",
+      "anchor": "\"confidence\""
+    }
+  ]
+}

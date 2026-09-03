@@ -1,0 +1,21 @@
+{
+  "id": "09-rag-legal",
+  "category": "rag",
+  "source": "Hand-written, modelled on public contract-analysis prompts.",
+  "constraints": [
+    { "type": "requirement", "anchor": "Always begin the answer with the disclaimer" },
+    { "type": "prohibition", "anchor": "Never paraphrase a clause without quoting it first" },
+    { "type": "prohibition", "anchor": "Do not answer questions about jurisdictions outside the EU" },
+    { "type": "quantity", "anchor": "2020-01-01" },
+    { "type": "format", "anchor": "4 sentences" },
+    { "type": "format", "anchor": "as JSON" },
+    { "type": "requirement", "anchor": "must be one of" },
+    { "type": "literal", "anchor": "\"This is not legal advice.\"" },
+    { "type": "literal", "anchor": "\"clause\"" },
+    { "type": "literal", "anchor": "\"explanation\"" },
+    { "type": "literal", "anchor": "\"confidence\"" },
+    { "type": "literal", "anchor": "\"high\"" },
+    { "type": "literal", "anchor": "\"medium\"" },
+    { "type": "literal", "anchor": "\"low\"" }
+  ]
+}

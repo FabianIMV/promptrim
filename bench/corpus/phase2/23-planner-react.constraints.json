@@ -1,0 +1,43 @@
+{
+  "id": "23-planner-react",
+  "category": "agent",
+  "source": "Hand-written, modelled on public ReAct-style planner prompts.",
+  "constraints": [
+    {
+      "type": "prohibition",
+      "anchor": "never show the thought to the user"
+    },
+    {
+      "type": "format",
+      "anchor": "6 steps"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never repeat a step that already failed twice"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not mark the task complete until every step reports success"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must be one of"
+    },
+    {
+      "type": "format",
+      "anchor": "exactly two lines"
+    },
+    {
+      "type": "variable",
+      "anchor": "<your reasoning>"
+    },
+    {
+      "type": "variable",
+      "anchor": "<action name>"
+    },
+    {
+      "type": "variable",
+      "anchor": "<arguments as JSON>"
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "id": "26-tutor-math",
+  "category": "education",
+  "source": "Hand-written, modelled on public tutoring system prompts.",
+  "constraints": [
+    { "type": "prohibition", "anchor": "Never give the final answer on the first reply" },
+    { "type": "requirement", "anchor": "only after the student has attempted the problem twice" },
+    { "type": "prohibition", "anchor": "Do not use notation the student has not seen" },
+    { "type": "requirement", "anchor": "Always show the units in the result" },
+    { "type": "format", "anchor": "at most 3 sentences" },
+    { "type": "format", "anchor": "no more than 1 formula" },
+    { "type": "prohibition", "anchor": "Never tell the student that a question is easy" }
+  ]
+}

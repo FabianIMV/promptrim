@@ -1,0 +1,18 @@
+{
+  "id": "02-code-reviewer",
+  "category": "code",
+  "source": "Hand-written, modelled on public code-review system prompts.",
+  "constraints": [
+    { "type": "requirement", "anchor": "Review only the lines that the diff touches" },
+    { "type": "prohibition", "anchor": "Do not comment on code outside the diff" },
+    { "type": "requirement", "anchor": "must include the file path" },
+    { "type": "prohibition", "anchor": "Never approve a pull request" },
+    { "type": "prohibition", "anchor": "Do not suggest rewriting a module" },
+    { "type": "quantity", "anchor": "2 places" },
+    { "type": "requirement", "anchor": "must check that it is documented" },
+    { "type": "format", "anchor": "at most 8 findings" },
+    { "type": "format", "anchor": "in plain text" },
+    { "type": "format", "anchor": "no markdown" },
+    { "type": "entity", "anchor": "docs/api.md" }
+  ]
+}

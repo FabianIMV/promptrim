@@ -1,0 +1,47 @@
+{
+  "id": "08-rag-citations",
+  "category": "rag",
+  "source": "Hand-written, modelled on public research-assistant system prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "must be supported by at least 2 independent sources"
+    },
+    {
+      "type": "quantity",
+      "anchor": "at least 2"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never fabricate a citation"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "do not pick a winner"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must be verbatim"
+    },
+    {
+      "type": "format",
+      "anchor": "25 words"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not summarise a source you were not given in full"
+    },
+    {
+      "type": "format",
+      "anchor": "3 sentence"
+    },
+    {
+      "type": "format",
+      "anchor": "bulleted list"
+    },
+    {
+      "type": "format",
+      "anchor": "in English"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 export { compress, applyChanges } from './compress';
-export type { Change, CompressOptions, CompressResult } from './compress';
+export type { BlockedChange, Change, CompressOptions, CompressResult } from './compress';
 export { segment, findProtectedRanges } from './segment';
 export type { ProtectedKind, ProtectedRange, Segment } from './segment';
 export { ALL_RULES, DISCARDED_RULES, rulesForLevel, ruleById, LEVELS, levelRank } from './rules';
@@ -13,3 +13,26 @@ export {
 export type { TokenCountResult } from './tokenizers';
 export { pricing, allModels, getModel, costForTokens, projectedMonthlyCost } from './pricing';
 export type { Provider, ModelPricing, PricingData } from './pricing';
+export {
+  extractConstraints,
+  verifyConstraints,
+  buildLedger,
+  restoreConstraint,
+  findDuplicateConstraints,
+  splitSentences,
+  reduceToTokens,
+  CONSTRAINT_TYPES,
+  CRITICAL_TYPES,
+  TYPE_LABELS,
+  severityFor,
+  isCritical,
+} from './ledger';
+export type {
+  Constraint,
+  ConstraintCheck,
+  ConstraintType,
+  DuplicateGroup,
+  Ledger,
+  LedgerReport,
+  Severity,
+} from './ledger';

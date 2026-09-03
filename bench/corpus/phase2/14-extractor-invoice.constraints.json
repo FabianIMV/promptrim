@@ -1,0 +1,51 @@
+{
+  "id": "14-extractor-invoice",
+  "category": "extraction",
+  "source": "Hand-written, modelled on public document-extraction prompts.",
+  "constraints": [
+    {
+      "type": "format",
+      "anchor": "JSON object"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never return prose"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must use the format"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must be numbers"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "never strings"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must use a dot as the decimal separator"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not guess a value"
+    },
+    {
+      "type": "requirement",
+      "anchor": "total must equal subtotal plus tax"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never include fields that are not in the list above"
+    },
+    {
+      "type": "variable",
+      "anchor": "{{invoice_text}}"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"warning\""
+    }
+  ]
+}

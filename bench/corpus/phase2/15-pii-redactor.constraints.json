@@ -1,0 +1,19 @@
+{
+  "id": "15-pii-redactor",
+  "category": "safety",
+  "source": "Hand-written, modelled on public PII-redaction prompts.",
+  "constraints": [
+    { "type": "prohibition", "anchor": "Never leave a partial identifier" },
+    { "type": "quantity", "anchor": "4 digits" },
+    { "type": "prohibition", "anchor": "Do not redact company names" },
+    { "type": "requirement", "anchor": "must preserve the original line breaks" },
+    { "type": "requirement", "anchor": "only the redacted text" },
+    { "type": "prohibition", "anchor": "Do not add a summary of what you redacted" },
+    { "type": "variable", "anchor": "[NAME]" },
+    { "type": "variable", "anchor": "[EMAIL]" },
+    { "type": "variable", "anchor": "[PHONE]" },
+    { "type": "variable", "anchor": "[CARD]" },
+    { "type": "variable", "anchor": "[ID]" },
+    { "type": "literal", "anchor": "https://example.com/pricing" }
+  ]
+}

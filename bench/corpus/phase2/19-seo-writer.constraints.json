@@ -1,0 +1,51 @@
+{
+  "id": "19-seo-writer",
+  "category": "writing",
+  "source": "Hand-written, modelled on public SEO-outline prompts.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "must contain exactly 1 H1"
+    },
+    {
+      "type": "format",
+      "anchor": "exactly 1"
+    },
+    {
+      "type": "requirement",
+      "anchor": "must appear in the H1"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never repeat the same heading text"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not use clickbait"
+    },
+    {
+      "type": "format",
+      "anchor": "under 60 characters"
+    },
+    {
+      "type": "format",
+      "anchor": "at most 155 characters"
+    },
+    {
+      "type": "format",
+      "anchor": "as markdown"
+    },
+    {
+      "type": "format",
+      "anchor": "no commentary"
+    },
+    {
+      "type": "variable",
+      "anchor": "{{primary_keyword}}"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"You won't believe\""
+    }
+  ]
+}

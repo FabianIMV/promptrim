@@ -1,0 +1,39 @@
+{
+  "id": "29-changelog-writer",
+  "category": "writing",
+  "source": "Hand-written, modelled on Keep a Changelog conventions.",
+  "constraints": [
+    {
+      "type": "requirement",
+      "anchor": "must reference its pull request number"
+    },
+    {
+      "type": "format",
+      "anchor": "one line"
+    },
+    {
+      "type": "format",
+      "anchor": "under 100 characters"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Never invent a change that is not in the input list"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not include internal refactors"
+    },
+    {
+      "type": "format",
+      "anchor": "markdown"
+    },
+    {
+      "type": "prohibition",
+      "anchor": "Do not add a summary paragraph"
+    },
+    {
+      "type": "literal",
+      "anchor": "\"BREAKING:\""
+    }
+  ]
+}

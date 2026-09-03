@@ -1,0 +1,16 @@
+{
+  "id": "28-recipe-nutrition",
+  "category": "consumer",
+  "source": "Hand-written, modelled on public recipe-adaptation prompts.",
+  "constraints": [
+    { "type": "prohibition", "anchor": "Never suggest an ingredient that conflicts with a listed restriction" },
+    { "type": "prohibition", "anchor": "Do not substitute an allergen with another allergen" },
+    { "type": "requirement", "anchor": "Always state the substitution ratio" },
+    { "type": "quantity", "anchor": "15 ml" },
+    { "type": "quantity", "anchor": "10 kcal" },
+    { "type": "prohibition", "anchor": "Do not claim health benefits" },
+    { "type": "prohibition", "anchor": "Never say a recipe is" },
+    { "type": "variable", "anchor": "{{restrictions}}" },
+    { "type": "literal", "anchor": "\"healthy\"" }
+  ]
+}

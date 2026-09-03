@@ -1,15 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
   allModels,
+  buildLedger,
   compress,
   costForTokens,
   countTokensForModel,
   getModel,
   LEVELS,
   projectedMonthlyCost,
+  restoreConstraint,
 } from '../core';
-import type { Level, ModelPricing, TokenCountResult } from '../core';
+import type {
+  BlockedChange,
+  Constraint,
+  Ledger,
+  Level,
+  ModelPricing,
+  TokenCountResult,
+} from '../core';
 import { aiCompress } from '../providers/gemini';
+import { LedgerPanel } from './LedgerPanel';
 
 const AI_MODE_STORAGE_KEY = 'promptrim.aiMode';
 const DEFAULT_MODEL_ID = 'claude-sonnet-5';
@@ -39,8 +49,14 @@ interface Savings {
   tokens: number;
   costPerCall: number;
   monthlyCost: number;
+}
+
+/** What the last run produced, so that "Restore" can recompute against it. */
+interface Run {
+  source: string;
   changes: number;
   protectedRegions: number;
+  constraints: Constraint[] | null;
 }
 
 export function App() {
@@ -57,6 +73,9 @@ export function App() {
   const [callsPerDay, setCallsPerDay] = useState(DEFAULT_CALLS_PER_DAY);
   const [inTokenResult, setInTokenResult] = useState<TokenCountResult>(NO_TOKENS);
   const [outTokenResult, setOutTokenResult] = useState<TokenCountResult>(NO_TOKENS);
+  const [ledger, setLedger] = useState<Ledger | null>(null);
+  const [blocked, setBlocked] = useState<BlockedChange[]>([]);
+  const [run, setRun] = useState<Run | null>(null);
   const apiKeyRef = useRef<HTMLInputElement>(null);
 
   const targetModel = useMemo(() => getModel(targetModelId) ?? allModels()[0]!, [targetModelId]);
@@ -104,7 +123,46 @@ export function App() {
     setInput(value);
     setError('');
     setSavings(null);
+    setLedger(null);
+    setBlocked([]);
+    setRun(null);
   }, []);
+
+  /** Token savings of `result` against `source`, recomputed after a restore. */
+  const refreshSavings = useCallback(
+    async (source: string, result: string) => {
+      const [before, after] = await Promise.all([
+        countTokensForModel(source, targetModel, geminiKeyForCounting),
+        countTokensForModel(result, targetModel, geminiKeyForCounting),
+      ]);
+      if (after.tokens >= before.tokens || before.tokens === 0) {
+        setSavings(null);
+        return false;
+      }
+      const saved = before.tokens - after.tokens;
+      setSavings({
+        pct: Math.round((saved / before.tokens) * 100),
+        tokens: saved,
+        costPerCall: costForTokens(saved, targetModel.input_per_mtok),
+        monthlyCost: projectedMonthlyCost(saved, targetModel.input_per_mtok, callsPerDay),
+      });
+      return true;
+    },
+    [targetModel, geminiKeyForCounting, callsPerDay],
+  );
+
+  const onRestore = useCallback(
+    (constraint: Constraint) => {
+      if (!run) return;
+      const restored = restoreConstraint(run.source, output, constraint);
+      setOutput(restored);
+      setLedger(
+        buildLedger(run.source, restored, run.constraints ? { constraints: run.constraints } : {}),
+      );
+      void refreshSavings(run.source, restored);
+    },
+    [output, run, refreshSavings],
+  );
 
   const onCompress = useCallback(async () => {
     const text = input.trim();
@@ -120,39 +178,36 @@ export function App() {
     setError('');
     setSavings(null);
     setOutput('');
+    setLedger(null);
+    setBlocked([]);
     setBusy(true);
 
     try {
       let result: string;
-      let changes = 0;
-      let protectedRegions = 0;
+      let nextRun: Run = { source: text, changes: 0, protectedRegions: 0, constraints: null };
 
       if (aiMode) {
         result = await aiCompress(text, level, apiKey);
       } else {
         const compressed = compress(text, level);
         result = compressed.output;
-        changes = compressed.changes.length;
-        protectedRegions = compressed.segments.filter((s) => s.kind === 'protected').length;
+        nextRun = {
+          source: text,
+          changes: compressed.changes.length,
+          protectedRegions: compressed.segments.filter((s) => s.kind === 'protected').length,
+          constraints: compressed.constraints,
+        };
+        setBlocked(compressed.blocked);
       }
 
       setOutput(result);
+      setRun(nextRun);
+      setLedger(
+        buildLedger(text, result, nextRun.constraints ? { constraints: nextRun.constraints } : {}),
+      );
 
-      const [before, after] = await Promise.all([
-        countTokensForModel(text, targetModel, geminiKeyForCounting),
-        countTokensForModel(result, targetModel, geminiKeyForCounting),
-      ]);
-      if (after.tokens < before.tokens) {
-        const saved = before.tokens - after.tokens;
-        setSavings({
-          pct: Math.round((saved / before.tokens) * 100),
-          tokens: saved,
-          costPerCall: costForTokens(saved, targetModel.input_per_mtok),
-          monthlyCost: projectedMonthlyCost(saved, targetModel.input_per_mtok, callsPerDay),
-          changes,
-          protectedRegions,
-        });
-      } else {
+      const saved = await refreshSavings(text, result);
+      if (!saved) {
         setError(
           'This prompt is already concise — minimal savings in Fast mode. Try AI mode or Aggressive level for more compression.',
         );
@@ -162,7 +217,7 @@ export function App() {
     } finally {
       setBusy(false);
     }
-  }, [aiMode, apiKey, input, level, targetModel, geminiKeyForCounting, callsPerDay]);
+  }, [aiMode, apiKey, input, level, refreshSavings]);
 
   const onCopy = useCallback(async () => {
     if (!output) return;
@@ -180,6 +235,9 @@ export function App() {
     setOutput('');
     setError('');
     setSavings(null);
+    setLedger(null);
+    setBlocked([]);
+    setRun(null);
   }, []);
 
   return (
@@ -294,14 +352,16 @@ export function App() {
             <div class="saving-label">saved / month @ {callsPerDay.toLocaleString()}/day</div>
           </div>
         </div>
-        {savings && !aiMode && (
+        {savings && !aiMode && run && (
           <div class="savings-note">
-            {savings.changes} rule change{savings.changes === 1 ? '' : 's'} ·{' '}
-            {savings.protectedRegions} protected region
-            {savings.protectedRegions === 1 ? '' : 's'} left untouched
+            {run.changes} rule change{run.changes === 1 ? '' : 's'} · {run.protectedRegions}{' '}
+            protected region
+            {run.protectedRegions === 1 ? '' : 's'} left untouched
           </div>
         )}
       </div>
+
+      {ledger && <LedgerPanel ledger={ledger} blocked={blocked} onRestore={onRestore} />}
 
       <div class="panels">
         <div class="panel">

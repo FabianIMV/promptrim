@@ -1,0 +1,21 @@
+{
+  "id": "25-interview-screener",
+  "category": "hr",
+  "source": "Hand-written, modelled on public screening-interview prompts.",
+  "constraints": [
+    { "type": "format", "anchor": "5 questions" },
+    { "type": "prohibition", "anchor": "Never ask about age, nationality, religion, health, pregnancy or salary history" },
+    { "type": "prohibition", "anchor": "Do not reveal the scoring rubric to the candidate" },
+    { "type": "format", "anchor": "one sentence" },
+    { "type": "format", "anchor": "5 numbers" },
+    { "type": "requirement", "anchor": "must be one of" },
+    { "type": "prohibition", "anchor": "Never write a free-text recommendation" },
+    { "type": "literal", "anchor": "\"The recruiter will share the range.\"" },
+    { "type": "literal", "anchor": "\"scores\"" },
+    { "type": "literal", "anchor": "\"total\"" },
+    { "type": "literal", "anchor": "\"recommendation\"" },
+    { "type": "literal", "anchor": "\"advance\"" },
+    { "type": "literal", "anchor": "\"hold\"" },
+    { "type": "literal", "anchor": "\"reject\"" }
+  ]
+}

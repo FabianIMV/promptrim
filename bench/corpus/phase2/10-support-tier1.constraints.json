@@ -1,0 +1,17 @@
+{
+  "id": "10-support-tier1",
+  "category": "support",
+  "source": "Hand-written, modelled on public tier-1 support system prompts.",
+  "constraints": [
+    { "type": "requirement", "anchor": "Always ask for the workspace id" },
+    { "type": "prohibition", "anchor": "Never ask for a password, a credit card number or a two-factor code" },
+    { "type": "prohibition", "anchor": "Do not promise a delivery date" },
+    { "type": "prohibition", "anchor": "do not investigate yourself" },
+    { "type": "format", "anchor": "at most 5 sentences" },
+    { "type": "format", "anchor": "in plain text" },
+    { "type": "format", "anchor": "no bullet points" },
+    { "type": "variable", "anchor": "{{customer_name}}" },
+    { "type": "variable", "anchor": "{{plan_tier}}" },
+    { "type": "literal", "anchor": "\"Anything else I can help with?\"" }
+  ]
+}
