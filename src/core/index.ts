@@ -1,5 +1,7 @@
 export { compress, applyChanges } from './compress';
 export type { BlockedChange, Change, CompressOptions, CompressResult } from './compress';
+export { changeKey, buildDiffItems, projectDiff } from './diff';
+export type { BlockedItem, ChangeItem, DiffItem, TextItem } from './diff';
 export { segment, findProtectedRanges } from './segment';
 export type { ProtectedKind, ProtectedRange, Segment } from './segment';
 export { ALL_RULES, DISCARDED_RULES, rulesForLevel, ruleById, LEVELS, levelRank } from './rules';

@@ -283,7 +283,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | 0 | ✅ Completada | 2026-09-02 | [#9](https://github.com/FabianIMV/promptrim/pull/9) | Scaffold Vite+TS+Preact+Vitest, segmentador de regiones protegidas, motor de reglas con `Change[]`, UI Preact con paridad. 299 tests. Ver 6.1. |
 | 1 | ✅ Completada | 2026-09-02 | [#10](https://github.com/FabianIMV/promptrim/pull/10) | Tokenizador exacto o200k (`js-tiktoken`, lazy), estimador calibrado para Claude, `countTokens` real de Gemini con fallback, `data/pricing.json` verificado hoy en las 3 webs oficiales, UI con selector de modelo objetivo, campo llamadas/día y proyección mensual. 343 tests (+44). Ver 6.2. |
 | 2 | ✅ Completada | 2026-09-03 | [#11](https://github.com/FabianIMV/promptrim/pull/11) | `core/ledger/` (extracción, verificación, duplicados, restauración), veto del ledger sobre `compress()` en Aggressive, panel "Verification" en la UI y corpus anotado de 30 prompts en `bench/corpus/phase2/`. Recall 98,8% y precisión 88,1% sobre 327 restricciones críticas anotadas; 0 falsos "preservado". 737 tests (+394). Ver 6.3. |
-| 3 | Pendiente | | | |
+| 3 | ✅ Completada | 2026-09-03 | (pendiente de enlazar) | Diff construido desde `Change[]` (`src/core/diff.ts`, sin librería de diff de strings), deshacer por cambio y por regla con recálculo de tokens/ledger, panel de reglas persistido en `localStorage`, y los cambios bloqueados por el ledger integrados en la propia vista de diff. 896 tests (+159). Ver 6.4. |
 | 4 | Pendiente | | | |
 | 5 | Pendiente | | | |
 | 6 | Pendiente | | | |
@@ -531,3 +531,85 @@ promesa entera del producto.
 - `extractConstraints` recorre el texto una vez por patrón (unos 30 `matchAll` sobre el prompt completo) y el
   veto lo re-verifica hasta 5 veces. Es instantáneo en prompts de system (miles de caracteres) y no se optimizó;
   si la Fase 6 añade modo lote, conviene medirlo antes.
+
+### 6.4 Fase 3 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-03): `npm run lint` ✅, `npm test` ✅ (896 tests, 18 archivos,
++159 sobre el cierre de la Fase 2), `npm run build` ✅ (`tsc --noEmit` + `vite build`). Bundle inicial:
+26,63 kB gzip (`index-*.js`), frente a 25,21 kB gzip al cerrar la Fase 2 (+1,42 kB gzip por la vista de diff y
+el panel de reglas; sin dependencias nuevas — `package.json` no cambia en esta fase). Smoke test manual con
+Playwright + Chromium headless contra `vite preview`: se pega un prompt con cortesía, un marco de IA y una
+prohibición, se comprime en Aggressive, se deshace un cambio individual (el texto comprimido cambia), se pulsa
+"Undo all" de una regla (el texto vuelve a cambiar), se abre el panel de reglas, se desactiva una regla (el
+contador pasa de 37/37 a 36/37) y se activa un botón "↺" por teclado (foco + `Enter`) — sin errores de consola
+en ningún paso (captura en la sesión, no versionada, igual que en fases anteriores).
+
+**Decisiones tomadas en esta fase:**
+
+1. **El diff se construye desde `Change[]`, sin ninguna librería de comparación de strings.** La tarea 1 de la
+   Sección 3 menciona "librería `diff`/jsdiff"; el encargo de esta sesión fue más estricto ("El diff debe
+   construirse desde `Change[]`, no comparando strings") y es además la lectura consistente con la arquitectura
+   de la Fase 0 (`compress()` ya devuelve offsets exactos y `ruleId` por cambio — recomputar un diff de texto
+   sobre `original`/`output` solo perdería esa información). `src/core/diff.ts` añade tres funciones puras sin
+   DOM: `changeKey` (identidad estable `ruleId:start:end`, válida porque la selección de `compress()` nunca
+   solapa), `buildDiffItems` (interfoliona `original` con `Change[]`/`BlockedChange[]` en una secuencia
+   ordenada de segmentos de texto y de cambio) y `projectDiff` (reaplica un subconjunto de `Change[]` con
+   `applyChanges`). Viven en `src/core/` y tienen su propio archivo de test (`test/diff.test.ts`), igual que el
+   resto del motor.
+2. **"Deshacer todos los cambios reproduce el original byte a byte" es una propiedad estructural, no algo que la
+   UI deba acertar.** `projectDiff(original, changes, new Set(changes.map(changeKey)))` filtra todos los
+   cambios y llama a `applyChanges` con una lista vacía, que por construcción de la Fase 0 devuelve `original`
+   sin tocarlo. El test de propiedad (`test/diff.test.ts`) lo verifica sobre 50 prompts — los 10 de
+   `bench/corpus/phase0/`, los 30 de `bench/corpus/phase2/` y 10 casos borde nuevos (vacío, un carácter, solo
+   espacios, unicode/acentos/emoji, un fence de código) — en los tres niveles, superando el criterio de
+   aceptación de la Sección 3.
+3. **Los cambios bloqueados por el ledger (Fase 2) se integran en la propia línea de tiempo del diff**, no solo
+   en la lista aparte de `LedgerPanel`. `BlockedChange` comparte el mismo sistema de coordenadas que `Change`
+   (offsets sobre el original), así que `buildDiffItems` los intercala en su posición real con un marcador ⛔ y
+   sin botón de deshacer (nunca llegaron a aplicarse). Esto resuelve la deuda que la Fase 2 le dejó explícitamente
+   a esta fase («la Fase 3 la pide integrada en la vista de diff»); `LedgerPanel` conserva además su lista
+   separada porque agrupa por restricción perdida, una vista que el diff no puede ofrecer.
+4. **El panel de reglas persiste en `localStorage` bajo `promptrim.disabledRules`**, mismo patrón que
+   `promptrim.aiMode` de la Fase 0/1 (mismo `try/catch` silencioso para modo privado). `compress()` ya aceptaba
+   `disabledRuleIds` desde el diseño de la Fase 2 (`CompressOptions.disabledRuleIds`, sin usar hasta ahora); esta
+   fase solo la conecta a la UI. Solo afecta a Fast mode: el modo IA no pasa por `compress()`.
+5. **Deshacer por cambio y "deshacer todos los de la regla X" reutilizan el patrón ya existente de `onRestore`**
+   (Fase 2): la App recalcula `output`, `ledger` (`buildLedger`) y el ahorro (`refreshSavings`) de forma
+   imperativa tras cada toggle, en vez de introducir un `useEffect` derivado. `Run.changes` pasa de ser un
+   contador (`number`) a guardar el `Change[]` completo, que es lo que `projectDiff` necesita para recomputar.
+6. **Modo IA queda fuera del diff y del panel de reglas.** El proveedor de IA (Fase 1/futura Fase 5) devuelve
+   texto plano, no `Change[]`; no hay nada que deshacer por cambio ni reglas que activar/desactivar. `DiffView`
+   solo se renderiza cuando `run` viene de Fast mode, siguiendo el mismo precedente que `blocked`/el ledger de
+   verificación, que ya eran exclusivos de Fast mode desde la Fase 2.
+
+**Desviaciones respecto al plan:**
+
+- **Rama.** La sesión venía fijada a `claude/fase-3-diff-implementation-fjiiyt`, no a `feat/fase-3-diff`. Mismo
+  contenido, distinto nombre de rama (igual que en las fases 0-2).
+- **Sin librería `diff`/jsdiff.** Ver decisión 1: el encargo de esta sesión fue explícito en que el diff debía
+  construirse desde `Change[]` sin comparar strings, lo que hace innecesaria (y contraproducente, por perder
+  `ruleId`) cualquier librería de diffing genérico. No se añadió ninguna dependencia nueva.
+- **Artefacto visual en cambios que solo reparan mayúsculas.** La reparación de capitalización de la Fase 0
+  (decisión 2 de la Sección 6.1) extiende el `original`/`replacement` de un `Change` un carácter dentro de la
+  palabra siguiente. Cuando ese `Change` no borra nada más (p. ej. el marco "your task is to" desaparece justo
+  antes de "write"), el diff renderiza "...to w" tachado seguido de "W" insertado y luego "rite" como texto sin
+  cambios, en vez de una sustitución limpia de una sola letra. El resultado es correcto — deshacer ese cambio
+  restaura exactamente la letra original — pero visualmente más ruidoso que un diff de strings ingenuo. No se
+  corrigió en esta fase: fusionar el renderizado de `Change`s adyacentes en la vista arriesgaría ocultar a qué
+  regla pertenece cada fragmento, que es justamente lo que la Sección 3 pide mostrar. Deuda menor para una fase
+  de pulido de UI.
+- **Sin tests de componente/DOM.** El repositorio no tenía infraestructura de testing de componentes antes de
+  esta fase (Vitest sin `@testing-library/preact` ni jsdom) y no se añadió: `src/core/diff.ts` tiene cobertura
+  completa como función pura, y el comportamiento de `DiffView`/`RulesPanel` se verificó con el smoke test de
+  Playwright descrito arriba, siguiendo el mismo criterio que las fases 0 y 1 (captura no versionada).
+
+**Deuda pendiente que hereda la Fase 4:**
+
+- El Cost Advisor de la Fase 4 recalcula ahorro sobre `output`; con deshacer por cambio, `output` ya no es fijo
+  tras una compresión — el advisor debe leer el `output` actual (post-toggle), no memorizar el de la primera
+  compresión. `refreshSavings` ya se recalcula en cada toggle, así que el patrón está disponible.
+- `RulesPanel` lista las 37 reglas activas sin buscador ni agrupación por categoría dentro de un nivel (solo por
+  nivel). Es manejable al tamaño actual del catálogo de reglas; revisar si crece mucho en fases futuras.
+- El modo IA (Fase 5) no tiene diff ni panel de reglas propio, porque no produce `Change[]`. Si la Fase 5 quiere
+  un diff equivalente para IA, necesitará su propio mecanismo de trazabilidad (p. ej. que el proveedor devuelva
+  también qué restricciones tocó), no puede reutilizar `src/core/diff.ts` tal cual.

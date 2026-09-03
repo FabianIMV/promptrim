@@ -2,16 +2,19 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import {
   allModels,
   buildLedger,
+  changeKey,
   compress,
   costForTokens,
   countTokensForModel,
   getModel,
   LEVELS,
+  projectDiff,
   projectedMonthlyCost,
   restoreConstraint,
 } from '../core';
 import type {
   BlockedChange,
+  Change,
   Constraint,
   Ledger,
   Level,
@@ -19,9 +22,12 @@ import type {
   TokenCountResult,
 } from '../core';
 import { aiCompress } from '../providers/gemini';
+import { DiffView } from './DiffView';
 import { LedgerPanel } from './LedgerPanel';
+import { RulesPanel } from './RulesPanel';
 
 const AI_MODE_STORAGE_KEY = 'promptrim.aiMode';
+const DISABLED_RULES_STORAGE_KEY = 'promptrim.disabledRules';
 const DEFAULT_MODEL_ID = 'claude-sonnet-5';
 const DEFAULT_CALLS_PER_DAY = 1000;
 
@@ -51,10 +57,10 @@ interface Savings {
   monthlyCost: number;
 }
 
-/** What the last run produced, so that "Restore" can recompute against it. */
+/** What the last run produced, so that "Restore" and the diff view can recompute against it. */
 interface Run {
   source: string;
-  changes: number;
+  changes: Change[];
   protectedRegions: number;
   constraints: Constraint[] | null;
 }
@@ -76,6 +82,8 @@ export function App() {
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [blocked, setBlocked] = useState<BlockedChange[]>([]);
   const [run, setRun] = useState<Run | null>(null);
+  const [disabledChangeKeys, setDisabledChangeKeys] = useState<Set<string>>(new Set());
+  const [disabledRuleIds, setDisabledRuleIds] = useState<Set<string>>(new Set());
   const apiKeyRef = useRef<HTMLInputElement>(null);
 
   const targetModel = useMemo(() => getModel(targetModelId) ?? allModels()[0]!, [targetModelId]);
@@ -84,8 +92,11 @@ export function App() {
   useEffect(() => {
     try {
       if (localStorage.getItem(AI_MODE_STORAGE_KEY) === 'true') setAiMode(true);
+      const stored = localStorage.getItem(DISABLED_RULES_STORAGE_KEY);
+      if (stored) setDisabledRuleIds(new Set(JSON.parse(stored) as string[]));
     } catch {
-      // Storage can be unavailable (private mode); the default is fine.
+      // Storage can be unavailable (private mode), or hold something that is
+      // not valid JSON; the default (nothing disabled) is fine either way.
     }
   }, []);
 
@@ -126,6 +137,7 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setDisabledChangeKeys(new Set());
   }, []);
 
   /** Token savings of `result` against `source`, recomputed after a restore. */
@@ -164,6 +176,60 @@ export function App() {
     [output, run, refreshSavings],
   );
 
+  /** Recompute output, ledger and savings for a new set of undone change keys. */
+  const applyDisabledChanges = useCallback(
+    (next: Set<string>) => {
+      if (!run) return;
+      setDisabledChangeKeys(next);
+      const result = projectDiff(run.source, run.changes, next);
+      setOutput(result);
+      setLedger(
+        buildLedger(run.source, result, run.constraints ? { constraints: run.constraints } : {}),
+      );
+      void refreshSavings(run.source, result);
+    },
+    [run, refreshSavings],
+  );
+
+  const onToggleChange = useCallback(
+    (key: string) => {
+      const next = new Set(disabledChangeKeys);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      applyDisabledChanges(next);
+    },
+    [disabledChangeKeys, applyDisabledChanges],
+  );
+
+  const onToggleRule = useCallback(
+    (ruleId: string, nextActive: boolean) => {
+      if (!run) return;
+      const next = new Set(disabledChangeKeys);
+      for (const change of run.changes) {
+        if (change.ruleId !== ruleId) continue;
+        const key = changeKey(change);
+        if (nextActive) next.delete(key);
+        else next.add(key);
+      }
+      applyDisabledChanges(next);
+    },
+    [run, disabledChangeKeys, applyDisabledChanges],
+  );
+
+  const onToggleRuleEnabled = useCallback((ruleId: string) => {
+    setDisabledRuleIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(ruleId)) next.delete(ruleId);
+      else next.add(ruleId);
+      try {
+        localStorage.setItem(DISABLED_RULES_STORAGE_KEY, JSON.stringify([...next]));
+      } catch {
+        // Ignore storage failures; the toggle still works for this session.
+      }
+      return next;
+    });
+  }, []);
+
   const onCompress = useCallback(async () => {
     const text = input.trim();
     if (!text) {
@@ -180,20 +246,21 @@ export function App() {
     setOutput('');
     setLedger(null);
     setBlocked([]);
+    setDisabledChangeKeys(new Set());
     setBusy(true);
 
     try {
       let result: string;
-      let nextRun: Run = { source: text, changes: 0, protectedRegions: 0, constraints: null };
+      let nextRun: Run = { source: text, changes: [], protectedRegions: 0, constraints: null };
 
       if (aiMode) {
         result = await aiCompress(text, level, apiKey);
       } else {
-        const compressed = compress(text, level);
+        const compressed = compress(text, level, { disabledRuleIds: [...disabledRuleIds] });
         result = compressed.output;
         nextRun = {
           source: text,
-          changes: compressed.changes.length,
+          changes: compressed.changes,
           protectedRegions: compressed.segments.filter((s) => s.kind === 'protected').length,
           constraints: compressed.constraints,
         };
@@ -217,7 +284,7 @@ export function App() {
     } finally {
       setBusy(false);
     }
-  }, [aiMode, apiKey, input, level, refreshSavings]);
+  }, [aiMode, apiKey, input, level, refreshSavings, disabledRuleIds]);
 
   const onCopy = useCallback(async () => {
     if (!output) return;
@@ -238,6 +305,7 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setDisabledChangeKeys(new Set());
   }, []);
 
   return (
@@ -266,6 +334,8 @@ export function App() {
           />
           AI-powered (Gemini API)
         </label>
+
+        <RulesPanel disabledRuleIds={disabledRuleIds} onToggle={onToggleRuleEnabled} />
       </div>
 
       <div class="cost-row">
@@ -354,14 +424,25 @@ export function App() {
         </div>
         {savings && !aiMode && run && (
           <div class="savings-note">
-            {run.changes} rule change{run.changes === 1 ? '' : 's'} · {run.protectedRegions}{' '}
-            protected region
+            {run.changes.length} rule change{run.changes.length === 1 ? '' : 's'} ·{' '}
+            {run.protectedRegions} protected region
             {run.protectedRegions === 1 ? '' : 's'} left untouched
           </div>
         )}
       </div>
 
       {ledger && <LedgerPanel ledger={ledger} blocked={blocked} onRestore={onRestore} />}
+
+      {run && !aiMode && (
+        <DiffView
+          original={run.source}
+          changes={run.changes}
+          blocked={blocked}
+          disabled={disabledChangeKeys}
+          onToggleChange={onToggleChange}
+          onToggleRule={onToggleRule}
+        />
+      )}
 
       <div class="panels">
         <div class="panel">
