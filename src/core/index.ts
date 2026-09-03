@@ -13,8 +13,51 @@ export {
   countTokensForModel,
 } from './tokenizers';
 export type { TokenCountResult } from './tokenizers';
-export { pricing, allModels, getModel, costForTokens, projectedMonthlyCost } from './pricing';
+export {
+  pricing,
+  allModels,
+  getModel,
+  costForTokens,
+  projectedMonthlyCost,
+  cacheReadPricePerMtok,
+  cacheWritePricePerMtok,
+} from './pricing';
 export type { Provider, ModelPricing, PricingData } from './pricing';
+export {
+  splitPrompt,
+  findDynamicMarkers,
+  caching,
+  providerCacheRules,
+  minCacheableTokens,
+  ttlsForModel,
+  adviseCost,
+  breakEvenCalls,
+  chooseTtl,
+  defaultIntervalSeconds,
+  minCallsPerHour,
+  scaleCompressedTokens,
+  buildCacheReady,
+  recommend,
+  usd,
+  DAYS_PER_MONTH,
+  MEANINGFUL_SAVING_RATIO,
+} from './cache-advisor';
+export type {
+  CacheReadyResult,
+  CacheScenarioDetail,
+  CacheTtl,
+  CacheWorkload,
+  CachingData,
+  CostAdvice,
+  DynamicMarker,
+  MarkerKind,
+  ModelCacheRules,
+  PromptSplit,
+  ProviderCacheRules,
+  Recommendation,
+  Scenario,
+  ScenarioId,
+} from './cache-advisor';
 export {
   extractConstraints,
   verifyConstraints,

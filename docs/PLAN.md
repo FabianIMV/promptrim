@@ -284,7 +284,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | 1 | ✅ Completada | 2026-09-02 | [#10](https://github.com/FabianIMV/promptrim/pull/10) | Tokenizador exacto o200k (`js-tiktoken`, lazy), estimador calibrado para Claude, `countTokens` real de Gemini con fallback, `data/pricing.json` verificado hoy en las 3 webs oficiales, UI con selector de modelo objetivo, campo llamadas/día y proyección mensual. 343 tests (+44). Ver 6.2. |
 | 2 | ✅ Completada | 2026-09-03 | [#11](https://github.com/FabianIMV/promptrim/pull/11) | `core/ledger/` (extracción, verificación, duplicados, restauración), veto del ledger sobre `compress()` en Aggressive, panel "Verification" en la UI y corpus anotado de 30 prompts en `bench/corpus/phase2/`. Recall 98,8% y precisión 88,1% sobre 327 restricciones críticas anotadas; 0 falsos "preservado". 737 tests (+394). Ver 6.3. |
 | 3 | ✅ Completada | 2026-09-03 | [#12](https://github.com/FabianIMV/promptrim/pull/12) | Diff construido desde `Change[]` (`src/core/diff.ts`, sin librería de diff de strings), deshacer por cambio y por regla con recálculo de tokens/ledger, panel de reglas persistido en `localStorage`, y los cambios bloqueados por el ledger integrados en la propia vista de diff. 896 tests (+159). Ver 6.4. |
-| 4 | Pendiente | | | |
+| 4 | ✅ Completada | 2026-09-03 | [#13](https://github.com/FabianIMV/promptrim/pull/13) | `core/cache-advisor/` (separación prefijo/sufijo, invalidadores silenciosos, modelo económico por proveedor, versión cache-ready y recomendación), `data/caching.json` con las reglas de caché verificadas hoy en las tres documentaciones oficiales, tarjeta "Cost Advisor" en la UI y sección "Compress or cache?" en la landing. El break-even (2 llamadas con TTL 5 min, 3 con 1 h) se reproduce desde los precios y coincide con la frase literal de la página de precios de Anthropic. 965 tests (+69). Ver 6.5.
 | 5 | Pendiente | | | |
 | 6 | Pendiente | | | |
 | 7 (opc.) | Pendiente | | | |
@@ -613,3 +613,134 @@ en ningún paso (captura en la sesión, no versionada, igual que en fases anteri
 - El modo IA (Fase 5) no tiene diff ni panel de reglas propio, porque no produce `Change[]`. Si la Fase 5 quiere
   un diff equivalente para IA, necesitará su propio mecanismo de trazabilidad (p. ej. que el proveedor devuelva
   también qué restricciones tocó), no puede reutilizar `src/core/diff.ts` tal cual.
+
+### 6.5 Fase 4 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-03): `npm run lint` ✅, `npm test` ✅ (965 tests, 23 archivos,
++69 sobre el cierre de la Fase 3), `npm run build` ✅ (`tsc --noEmit` + `vite build`). Bundle inicial:
+33,42 kB gzip (`index-*.js`) frente a 26,63 kB al cerrar la Fase 3 (+6,79 kB gzip: el módulo del advisor, la
+tarjeta de UI y `data/caching.json`; sin dependencias nuevas — `package.json` no cambia en esta fase).
+Cobertura de `src/core/cache-advisor/**`: 98,2% de sentencias (100% en `split.ts`, `economics.ts` y
+`cache-ready.ts`). Smoke test manual con Playwright + Chromium headless contra `vite preview`, sin errores de
+consola: con un system prompt de ~1 180 tokens y 10 000 llamadas/día en Claude Sonnet 5 la tarjeta recomienda
+«Don't just compress — move 2 per-request lines below the breakpoint and cache the 1,174 tokens above it»
+(89% de ahorro frente al 0% de comprimir), lista los cuatro invalidadores silenciosos con su línea, genera la
+versión cache-ready con el comentario de `cache_control` y, al cambiar a GPT-5 o Gemini 2.5 Flash (mínimo
+2 048 tokens), pasa a «Leave it as it is» explicando el mínimo del modelo.
+
+**Reglas de caché verificadas hoy, en la documentación oficial de cada proveedor** (`data/caching.json`, con
+`docs_url`, `pricing_url` y `last_verified` por proveedor):
+
+- **Anthropic** — `platform.claude.com/docs/en/build-with-claude/prompt-caching` y la página de precios.
+  Multiplicadores confirmados: escritura 1,25× (5 min) y 2× (1 h), lectura 0,1×. Dos hallazgos que el plan no
+  anticipaba y que cambian el modelo: (a) **el mínimo cacheable es por modelo y muy distinto entre ellos** —
+  512 tokens en Opus 5, 1 024 en Sonnet 5 y **4 096 en Haiku 4.5** —, y por debajo «no error is returned», es
+  decir, falla en silencio; (b) **una lectura refresca el TTL sin coste** («The cache is refreshed for no
+  additional cost each time the cached content is used»), así que con llamadas más juntas que el TTL basta una
+  escritura, no una por ventana.
+- **OpenAI** — `developers.openai.com/api/docs/guides/prompt-caching` y la página de precios. Mínimo 1 024
+  tokens desde GPT-5.6 y 2 048 antes; TTL de 30 min desde la última escritura o reutilización en GPT-5.6+ y
+  ~5-10 min de inactividad antes. **GPT-5.6 cobra escritura de caché a 1,25×** (`$5,00` en Sol y `$0,25` en
+  Luna, contra `$4,00`/`$0,20` de input), dato que faltaba en `data/pricing.json` desde la Fase 1 y que se ha
+  añadido; los modelos anteriores no tienen cargo de escritura.
+- **Google Gemini** — `ai.google.dev/gemini-api/docs/generate-content/caching` y la página de precios. Mínimo
+  2 048 tokens en 2.5 Flash/Pro, TTL por defecto de 1 hora, y facturación en dos piezas: los tokens cacheados a
+  la tarifa de *context caching* (10% del input) **más almacenamiento por hora** ($1/MTok·h en Flash,
+  $4,50/MTok·h en Pro). La documentación no dice en ningún sitio que leer una caché explícita prolongue su
+  vida, así que el modelo la recrea una vez por ventana de TTL (asimetría documentada en
+  `refresh_quote`).
+
+**El break-even del plan coincide con la documentación.** La tarea 2 pedía comprobar «2 peticiones con TTL
+5 min, 3 con 1 h». La página de precios de Anthropic lo dice con esas palabras: «caching pays off after one
+cache read for the 5-minute duration (1.25x write), or after two cache reads for the 1-hour duration (2x
+write)» — una escritura más una lectura son 2 peticiones; más dos lecturas, 3. `breakEvenCalls()` no codifica
+esos números: los deriva de los precios con `n > (write − read) / (input − read)` (1,28 → 2 y 2,11 → 3), y un
+test los fija para los tres modelos de Anthropic y para los otros dos proveedores (2 llamadas también en
+GPT-5.6, GPT-5, GPT-4o y Gemini).
+
+**Decisiones tomadas en esta fase:**
+
+1. **El prefijo cacheable termina donde termina la coincidencia byte a byte, no donde «empieza lo dinámico».**
+   `splitPrompt()` devuelve dos offsets: `boundary` (primera sección por petición: `User:`, `<documents>`,
+   `Context:`) y `cacheableEnd`, que es anterior cuando algo variable vive por encima. Todo marcador que no sea
+   sección y esté sobre `boundary` es un **invalidador silencioso** (fecha, id de petición, variable de
+   plantilla) y se reporta con su línea y su porqué. Es exactamente el «common mistake» que documenta Anthropic
+   y la razón por la que un prompt de 3 000 tokens puede estar cacheando 12.
+2. **Los marcadores dentro de regiones protegidas de tipo `example` o `code-fence` se ignoran.** Una fecha en un
+   ejemplo few-shot es ilustrativa, y los bloques de ejemplo son justo el volumen que interesa dejar *dentro*
+   del prefijo cacheado. Reutiliza `findProtectedRanges()` de la Fase 0 en vez de duplicar detección.
+3. **Las variables de plantilla cuentan como invalidadores, no como frontera.** `{{company}}` en la primera
+   línea rompe la caché igual que una fecha si su valor cambia; si no cambia, la app lo dice («inline it above
+   the breakpoint») en vez de decidir por el usuario.
+4. **El TTL se elige por coste, no por heurística.** Se tarifican todas las opciones de TTL del modelo *y* la
+   opción de no cachear, y gana la más barata. Elegir «el TTL más corto que cubre el intervalo» es correcto en
+   Anthropic (el TTL largo encarece la escritura) pero **erróneo en Gemini**, donde la escritura cuesta lo mismo
+   con cualquier TTL y uno largo solo significa menos reescrituras: en el escenario de referencia el modelo
+   elige 1 h (24 escrituras/día) en vez de 5 min (286 escrituras/día), $65,74 contra $72,09 al mes.
+5. **«No cachear» siempre compite.** El escenario (c) es «lo mejor que puedes hacer reordenando», así que nunca
+   sale peor que el escenario (b) por culpa de una caché que no compensa. Cuando gana no cachear,
+   `cache.ttl` es `null` y la recomendación explica el motivo concreto: mínimo del modelo, intervalo mayor que
+   cualquier TTL, o almacenamiento por hora que no se amortiza (en Gemini Flash hacen falta ≥3,7 lecturas/hora;
+   en Pro, 4).
+6. **Un escenario solo «gana» si mejora la factura actual en más de un 0,5%** (`MEANINGFUL_SAVING_RATIO`).
+   Reordenar un prompt cuesta esfuerzo y riesgo; recomendar hacerlo por $0,004 al mes sería el mismo tipo de
+   deshonestidad que el «70%» del hero. Con empates, gana el escenario más simple.
+7. **`data/caching.json` separado de `data/pricing.json`.** Los precios ya tenían su fichero con
+   `last_verified` por modelo; el comportamiento (mínimos, TTLs, refresco, almacenamiento) es otro eje que se
+   re-verifica en otras páginas de documentación, y mezclarlo habría hecho imposible saber qué se comprobó
+   dónde. Cada proveedor guarda además la **cita literal** que respalda el dato (`break_even_quote`,
+   `refresh_quote`, `below_minimum_quote`), para que una re-verificación futura compare texto contra texto.
+8. **La versión cache-ready solo mueve líneas.** No reescribe nada: es una transformación de coste, no de
+   compresión. El invariante está fijado por un test sobre los 40 prompts de `bench/corpus/` (fases 0 y 2):
+   el multiconjunto de líneas no vacías de la salida es idéntico al de la entrada.
+9. **El escenario (c) comprime solo la parte dinámica.** Comprimir también el prefijo ahorraría un 10% de un
+   coste ya reducido al 10%; en Fast mode la parte dinámica se comprime de verdad (`compress()` es una función
+   pura y se puede aplicar a una porción), y en modo IA se escala con la tasa global del propio LLM
+   (`scaleCompressedTokens`), documentado como aproximación.
+
+**Correcciones a fases anteriores** (según la regla de la Sección 4: se corrige en la fase que lo descubre):
+
+- **`cache_write_per_mtok` de Gemini estaba mal nombrado.** La fila «Context caching» de la tabla de precios de
+  Google es el precio de los tokens *leídos* desde la caché (10% del input), no un recargo por escribir. Se ha
+  renombrado a `cache_read_per_mtok`, que es lo que ya usaba Anthropic para lo mismo. La creación de la caché en
+  Gemini se factura al precio de input estándar.
+- **Faltaba el precio de escritura de caché de GPT-5.6** (1,25× en Sol y Luna). Añadido, junto con el tramo de
+  contexto largo de esos dos modelos en `notes`.
+- `last_verified` global y de todos los modelos pasa a 2026-09-03: hoy se releyeron las tres páginas de precios
+  y ninguna otra cifra cambió respecto a la verificación del 2026-09-02.
+
+**Desviaciones respecto al plan:**
+
+- **Rama.** La sesión venía fijada a `claude/fase-4-cost-advisor-jzpt0o`, no a `feat/fase-4-cost-advisor`.
+  Mismo contenido, distinto nombre de rama (igual que en las fases 0-3).
+- **`core/cache-advisor.ts` es un directorio, no un archivo** (`split.ts`, `economics.ts`, `cache-ready.ts`,
+  `recommend.ts`, `rules.ts`), igual que ocurrió con `core/ledger.ts` en la Fase 2. Cinco responsabilidades con
+  cinco archivos de test.
+- **La entrada «intervalo entre llamadas» es un desplegable, no un campo numérico.** «Auto (even over 24 h)»
+  por defecto, más cuatro formas de tráfico típicas (< 1 min, minutos, ~1 hora, horas). Pedir segundos exactos
+  a un usuario que solo sabe «esto corre en ráfagas» habría dado una precisión falsa; el valor efectivo se
+  muestra siempre junto al selector.
+- **El Cost Advisor solo aparece después de comprimir**, porque el escenario (b) necesita el texto comprimido.
+  Consecuencia: en modo IA también se muestra, con la aproximación de la decisión 9.
+- **Sin tests de componente/DOM**, igual que en las fases 0-3 (el repositorio sigue sin `@testing-library`);
+  `CostAdvisor.tsx` se verificó con el smoke test de Playwright descrito arriba.
+- **Lighthouse no se volvió a medir** en esta fase (no es criterio de aceptación de la Fase 4). La tarjeta
+  reutiliza los tokens de color existentes y la tabla lleva `caption` en `.sr-only` y `scope` en cada
+  cabecera, así que no debería empeorar la auditoría de accesibilidad; conviene re-medirlo en la Fase 6.
+
+**Deuda pendiente que hereda la Fase 5:**
+
+- El modelo asume **llamadas equiespaciadas**. Un tráfico real en ráfagas con huecos largos rompe la cadena de
+  refrescos y necesitaría más de una escritura al día; el desplegable de intervalo lo aproxima, pero un modelo
+  por ráfagas (llamadas por ráfaga + huecos entre ráfagas) sería más fiel.
+- **Solo se modela el coste de input.** El output no entra en ninguno de los tres escenarios porque la
+  compresión no lo cambia; si la Fase 5 añade el coste de la propia llamada de compresión (tarea 3 de esa
+  fase), ahí sí habrá que sumar output.
+- **El tramo >200k tokens de Gemini Pro sigue sin modelarse** (deuda heredada de la Fase 1): un prefijo de más
+  de 200k se tarificaría con el precio del tramo bajo. Los mínimos ya están, los tramos no.
+- **`splitPrompt` es solo inglés**, como el extractor del ledger: `Usuario:` o `Contexto:` no se detectan. Es la
+  misma deuda que la Fase 2 dejó anotada para la i18n de la Fase 6, ahora también en el advisor
+  (`SECTION_LABEL_RE`, `DATE_HINT_RE`, `ID_HINT_RE`).
+- **La caché implícita de OpenAI y Gemini se modela como si fuese explícita.** En ambos casos el proveedor
+  decide si hay acierto y no lo garantiza; el advisor da el mejor caso (prefijo estable, tráfico continuo). La
+  frase que acompaña a la tarjeta lo dice, pero un factor de acierto configurable sería más honesto.

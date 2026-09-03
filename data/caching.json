@@ -1,0 +1,81 @@
+{
+  "last_verified": "2026-09-03",
+  "note": "Caching behaviour (minimum cacheable prefix, TTLs, refresh semantics, what is billed) read from each provider's official documentation on last_verified. Prices live in data/pricing.json. Do not edit a number here from memory — re-verify on docs_url first.",
+  "providers": [
+    {
+      "provider": "anthropic",
+      "label": "Anthropic Claude API",
+      "control": "explicit",
+      "control_note": "Cache breakpoints are explicit: a `cache_control` block marks the end of the cached prefix. Automatic caching (one top-level `cache_control`) is also available.",
+      "refresh_on_hit": true,
+      "refresh_quote": "The cache is refreshed for no additional cost each time the cached content is used.",
+      "storage_billed": false,
+      "break_even_quote": "A cache hit costs 10% of the standard input price, which means caching pays off after one cache read for the 5-minute duration (1.25x write), or after two cache reads for the 1-hour duration (2x write).",
+      "below_minimum_quote": "Shorter prompts cannot be cached, even if marked with `cache_control`. Any requests to cache fewer than this number of tokens will be processed without caching, and no error is returned.",
+      "breakpoint_hint": "Place `cache_control` on the last block whose prefix is identical across the requests you want to share a cache.",
+      "ttls": [
+        { "id": "anthropic-5m", "label": "5-minute cache", "seconds": 300 },
+        { "id": "anthropic-1h", "label": "1-hour cache", "seconds": 3600 }
+      ],
+      "docs_url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
+      "pricing_url": "https://platform.claude.com/docs/en/about-claude/pricing",
+      "last_verified": "2026-09-03"
+    },
+    {
+      "provider": "openai",
+      "label": "OpenAI API",
+      "control": "automatic",
+      "control_note": "Caching is automatic: a repeated prefix is reused with no API change. GPT-5.6 and later also support explicit breakpoints.",
+      "refresh_on_hit": true,
+      "refresh_quote": "A cached prefix remains eligible for reuse for 30 minutes after its most recent write or reuse.",
+      "storage_billed": false,
+      "break_even_quote": "For GPT-5.6 and later, cache writes cost 1.25x the standard, uncached input-token rate; cache reads cost only 0.1x that rate. Earlier models incur no additional cache-write charge.",
+      "below_minimum_quote": "The minimum cacheable prompt length is 1,024 tokens for GPT-5.6 and later and 2,048 tokens for models older than GPT-5.6.",
+      "breakpoint_hint": "Put stable developer instructions and shared reference material first; any change before a breakpoint stops the rest of the prefix from matching.",
+      "ttls": [
+        { "id": "openai-30m", "label": "30 min since the last use", "seconds": 1800 },
+        { "id": "openai-5m", "label": "~5 min of inactivity", "seconds": 300 }
+      ],
+      "docs_url": "https://developers.openai.com/api/docs/guides/prompt-caching",
+      "pricing_url": "https://developers.openai.com/api/docs/pricing",
+      "last_verified": "2026-09-03"
+    },
+    {
+      "provider": "gemini",
+      "label": "Google Gemini API",
+      "control": "explicit",
+      "control_note": "Implicit caching is on by default for Gemini 2.5 and newer; explicit caches are created with a TTL and are the only mode you can plan around. Cached tokens are billed at the context-caching rate, plus storage for as long as the cache lives.",
+      "refresh_on_hit": false,
+      "refresh_quote": "If not set, the TTL defaults to 1 hour. (Nothing in the docs extends an explicit cache's lifetime when it is read, so the model here recreates the cache once per TTL window.)",
+      "storage_billed": true,
+      "break_even_quote": "Billing is based on the following factors: Cache token count: the number of input tokens cached, billed at a reduced rate when included in subsequent prompts. Storage duration: the amount of time cached tokens are stored (TTL), billed based on the TTL duration of cached token count.",
+      "below_minimum_quote": "The minimum input token count for context caching varies by model. The maximum is the same as the maximum for the given model.",
+      "breakpoint_hint": "Try putting large and common contents at the beginning of your prompt, and send requests with a similar prefix in a short amount of time.",
+      "ttls": [
+        { "id": "gemini-5m", "label": "5-minute cache", "seconds": 300 },
+        { "id": "gemini-1h", "label": "1-hour cache (default TTL)", "seconds": 3600 }
+      ],
+      "docs_url": "https://ai.google.dev/gemini-api/docs/generate-content/caching",
+      "pricing_url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "last_verified": "2026-09-03"
+    }
+  ],
+  "models": {
+    "claude-opus-5": { "min_cacheable_tokens": 512, "ttl_ids": ["anthropic-5m", "anthropic-1h"] },
+    "claude-sonnet-5": {
+      "min_cacheable_tokens": 1024,
+      "ttl_ids": ["anthropic-5m", "anthropic-1h"]
+    },
+    "claude-haiku-4-5": {
+      "min_cacheable_tokens": 4096,
+      "ttl_ids": ["anthropic-5m", "anthropic-1h"]
+    },
+    "gpt-5.6-sol": { "min_cacheable_tokens": 1024, "ttl_ids": ["openai-30m"] },
+    "gpt-5.6-luna": { "min_cacheable_tokens": 1024, "ttl_ids": ["openai-30m"] },
+    "gpt-5": { "min_cacheable_tokens": 2048, "ttl_ids": ["openai-5m"] },
+    "gpt-5-mini": { "min_cacheable_tokens": 2048, "ttl_ids": ["openai-5m"] },
+    "gpt-4o": { "min_cacheable_tokens": 2048, "ttl_ids": ["openai-5m"] },
+    "gemini-2.5-pro": { "min_cacheable_tokens": 2048, "ttl_ids": ["gemini-5m", "gemini-1h"] },
+    "gemini-2.5-flash": { "min_cacheable_tokens": 2048, "ttl_ids": ["gemini-5m", "gemini-1h"] }
+  }
+}
