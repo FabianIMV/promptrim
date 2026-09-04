@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import {
   adviseCost,
   allModels,
+  batchPreview,
   buildCacheReady,
   buildExportContent,
   buildLedger,
@@ -16,6 +17,7 @@ import {
   exportMimeType,
   extractConstraints,
   getModel,
+  isCritical,
   LEVELS,
   parseImportedFile,
   projectDiff,
@@ -23,6 +25,7 @@ import {
   recommend,
   restoreConstraint,
   scaleCompressedTokens,
+  splitBatch,
   splitPrompt,
 } from '../core';
 import type {
@@ -53,6 +56,8 @@ import {
 } from '../providers';
 import type { AiCostEstimate, AiStep, AiVerdict, ProviderId } from '../providers';
 import { AiPanel } from './AiPanel';
+import { BatchView } from './BatchView';
+import type { BatchRow } from './BatchView';
 import { CostAdvisor } from './CostAdvisor';
 import { DiffView } from './DiffView';
 import { LedgerPanel } from './LedgerPanel';
@@ -151,6 +156,7 @@ export function App() {
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [blocked, setBlocked] = useState<BlockedChange[]>([]);
   const [run, setRun] = useState<Run | null>(null);
+  const [batchRows, setBatchRows] = useState<BatchRow[] | null>(null);
   const [disabledChangeKeys, setDisabledChangeKeys] = useState<Set<string>>(new Set());
   const [disabledRuleIds, setDisabledRuleIds] = useState<Set<string>>(new Set());
   const [callGap, setCallGap] = useState<CallGapId>('auto');
@@ -378,6 +384,7 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setBatchRows(null);
     setAiSteps(null);
     setAiOutcome(null);
     setCacheReady(null);
@@ -487,6 +494,69 @@ export function App() {
       return;
     }
 
+    const batchPrompts = splitBatch(text);
+    if (batchPrompts.length > 1) {
+      if (aiMode) {
+        setError(
+          'Batch mode runs in Fast mode only — uncheck "AI mode" to compress several prompts at once.',
+        );
+        return;
+      }
+
+      setError('');
+      setSavings(null);
+      setOutput('');
+      setLedger(null);
+      setBlocked([]);
+      setRun(null);
+      setAiOutcome(null);
+      setCacheReady(null);
+      setDisabledChangeKeys(new Set());
+      setBusy(true);
+
+      try {
+        const rows: BatchRow[] = [];
+        const outputs: string[] = [];
+        for (const [i, prompt] of batchPrompts.entries()) {
+          const compressed = compress(prompt, level, { disabledRuleIds: [...disabledRuleIds] });
+          const promptLedger = buildLedger(
+            prompt,
+            compressed.output,
+            compressed.constraints ? { constraints: compressed.constraints } : {},
+          );
+          const critical = promptLedger.report.checks.filter((c) => isCritical(c.constraint.type));
+          const [before, after] = await Promise.all([
+            countTokensForModel(prompt, targetModel, countingKey),
+            countTokensForModel(compressed.output, targetModel, countingKey),
+          ]);
+          rows.push({
+            index: i + 1,
+            preview: batchPreview(prompt),
+            tokensBefore: before.tokens,
+            tokensAfter: after.tokens,
+            pct:
+              before.tokens > 0
+                ? Math.round(((before.tokens - after.tokens) / before.tokens) * 100)
+                : 0,
+            criticalKept: critical.filter((c) => c.preserved).length,
+            criticalTotal: critical.length,
+            blocked: compressed.blocked.length,
+          });
+          outputs.push(compressed.output);
+        }
+        const joined = outputs.join('\n\n---\n\n');
+        setOutput(joined);
+        setBatchRows(rows);
+        await refreshSavings(text, joined);
+      } catch (err) {
+        setError(`Error: ${(err as Error).message}`);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    setBatchRows(null);
+
     setError('');
     setSavings(null);
     setOutput('');
@@ -569,6 +639,8 @@ export function App() {
     level,
     refreshSavings,
     disabledRuleIds,
+    targetModel,
+    countingKey,
   ]);
 
   const onCopy = useCallback(async () => {
@@ -589,6 +661,7 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setBatchRows(null);
     setAiSteps(null);
     setAiOutcome(null);
     setCacheReady(null);
@@ -780,6 +853,8 @@ export function App() {
         )}
       </div>
 
+      {batchRows && <BatchView rows={batchRows} />}
+
       {advisor && (
         <CostAdvisor
           advice={advisor.advice}
@@ -822,7 +897,7 @@ export function App() {
           </div>
           <textarea
             aria-label="Original prompt"
-            placeholder="Paste your AI prompt here — system prompts, user messages, context, instructions...&#10;&#10;Example: 'I would like you to please write me a comprehensive, detailed and extensive blog post about artificial intelligence. The post should be very thorough and cover all the important aspects...'"
+            placeholder="Paste your AI prompt here — system prompts, user messages, context, instructions...&#10;&#10;Example: 'I would like you to please write me a comprehensive, detailed and extensive blog post about artificial intelligence. The post should be very thorough and cover all the important aspects...'&#10;&#10;Tip: paste several prompts separated by a line with just --- to compress them all at once in Fast mode."
             value={input}
             onInput={(e) => onInput((e.currentTarget as HTMLTextAreaElement).value)}
           />
