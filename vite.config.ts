@@ -1,5 +1,9 @@
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import preact from '@preact/preset-vite';
+
+const ROOT = dirname(fileURLToPath(import.meta.url));
 
 // The site is published at https://fabianimv.github.io/promptrim/
 export default defineConfig({
@@ -13,6 +17,15 @@ export default defineConfig({
     // of the initial bundle. Raise the warning limit so that expected,
     // code-split chunk doesn't produce build noise.
     chunkSizeWarningLimit: 2500,
+    rollupOptions: {
+      // Two static SEO shells (English root, Spanish /es/) mounting the same
+      // Preact app — see docs/PLAN.md Phase 6 task 5. Vite mirrors each
+      // input's path under dist/, so `es/index.html` lands at `dist/es/`.
+      input: {
+        main: resolve(ROOT, 'index.html'),
+        es: resolve(ROOT, 'es/index.html'),
+      },
+    },
   },
   test: {
     environment: 'node',

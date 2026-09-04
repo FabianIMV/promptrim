@@ -27,4 +27,13 @@ describe('bench markers', () => {
       html.indexOf('<!-- BENCHMARK:LANDING:END -->'),
     );
   });
+
+  it('es/index.html has the paired BENCHMARK markers', () => {
+    const html = readFileSync(join(import.meta.dirname, '..', 'es', 'index.html'), 'utf8');
+    expect(html).toContain('<!-- BENCHMARK:LANDING:START -->');
+    expect(html).toContain('<!-- BENCHMARK:LANDING:END -->');
+    expect(html.indexOf('<!-- BENCHMARK:LANDING:START -->')).toBeLessThan(
+      html.indexOf('<!-- BENCHMARK:LANDING:END -->'),
+    );
+  });
 });
