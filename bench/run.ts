@@ -47,6 +47,7 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { compress } from '../src/core/compress';
+import { findProtectedRanges } from '../src/core/segment';
 import { LEVELS } from '../src/core/rules';
 import type { Level } from '../src/core/rules';
 import { CRITICAL_TYPES, extractConstraints, verifyConstraints } from '../src/core/ledger';
@@ -115,6 +116,8 @@ interface LevelStats {
   criticalPreservedPct: number;
   blockedChanges: number;
   promptsWithBlockedChanges: number;
+  protectedRegions: number;
+  protectedRegionViolations: number;
 }
 
 interface AiProviderStats {
@@ -167,6 +170,8 @@ async function benchFastMode(corpus: CorpusEntry[]): Promise<LevelStats[]> {
     let criticalKept = 0;
     let blockedChanges = 0;
     let promptsWithBlockedChanges = 0;
+    let protectedRegions = 0;
+    let protectedRegionViolations = 0;
 
     for (const { prompt } of corpus) {
       const constraints = extractConstraints(prompt);
@@ -175,7 +180,7 @@ async function benchFastMode(corpus: CorpusEntry[]): Promise<LevelStats[]> {
       // "critical constraints preserved" and "changes blocked" measurable at
       // Light and Balanced too, instead of only reporting the level where the
       // product already turns enforcement on.
-      const { output, blocked } = compress(prompt, level, {
+      const { output, blocked, changes } = compress(prompt, level, {
         enforceLedger: true,
         constraints,
       });
@@ -197,6 +202,16 @@ async function benchFastMode(corpus: CorpusEntry[]): Promise<LevelStats[]> {
         blockedChanges += blocked.length;
         promptsWithBlockedChanges += 1;
       }
+
+      // docs/PLAN.md §5: "npm run bench ... shows 0 changes in protected
+      // regions". Checked directly here, not only inferred from the separate
+      // regression suite, so the acceptance criterion is verifiable from this
+      // command's own output.
+      const ranges = findProtectedRanges(prompt);
+      protectedRegions += ranges.length;
+      protectedRegionViolations += changes.filter((c) =>
+        ranges.some((r) => c.start < r.end && r.start < c.end),
+      ).length;
     }
 
     results.push({
@@ -212,6 +227,8 @@ async function benchFastMode(corpus: CorpusEntry[]): Promise<LevelStats[]> {
       criticalPreservedPct: criticalTotal > 0 ? (criticalKept / criticalTotal) * 100 : 100,
       blockedChanges,
       promptsWithBlockedChanges,
+      protectedRegions,
+      protectedRegionViolations,
     });
   }
 
@@ -566,12 +583,40 @@ async function main(): Promise<void> {
   updateMarkedBlock(join(ROOT, 'index.html'), 'LANDING', html);
   updateMarkedBlock(join(ROOT, 'es', 'index.html'), 'LANDING', htmlEs);
 
+  let totalProtectedRegions = 0;
+  let totalProtectedRegionViolations = 0;
+  let totalCritical = 0;
+  let totalCriticalKept = 0;
   for (const { group, fast } of groupResults) {
     for (const row of fast) {
       console.log(
-        `[${group.id}] ${levelLabel(row.level)}: ${fmtPct(row.avgReductionPct)} avg reduction, ${fmtPct(row.criticalPreservedPct)} critical constraints preserved, ${row.blockedChanges} blocked changes`,
+        `[${group.id}] ${levelLabel(row.level)}: ${fmtPct(row.avgReductionPct)} avg reduction, ${fmtPct(row.criticalPreservedPct)} critical constraints preserved, ${row.blockedChanges} blocked changes, ${row.protectedRegionViolations}/${row.protectedRegions} protected-region violations`,
       );
+      totalProtectedRegions += row.protectedRegions;
+      totalProtectedRegionViolations += row.protectedRegionViolations;
+      totalCritical += row.criticalTotal;
+      totalCriticalKept += row.criticalKept;
     }
+  }
+
+  const overallCriticalPct = totalCritical > 0 ? (totalCriticalKept / totalCritical) * 100 : 100;
+  console.log(
+    `\nProtected regions: ${totalProtectedRegionViolations} changes touched a protected region, out of ${totalProtectedRegions} protected-region checks across both corpora and all three levels.`,
+  );
+  console.log(
+    `Critical constraints preserved overall: ${fmtPct(overallCriticalPct)} (${totalCriticalKept}/${totalCritical}).`,
+  );
+  // docs/PLAN.md §5 acceptance: 0 protected-region changes, >= 98% of
+  // critical constraints preserved.
+  if (totalProtectedRegionViolations > 0) {
+    console.error('FAIL: a rule touched a protected region. See docs/PLAN.md §5.');
+    process.exitCode = 1;
+  }
+  if (overallCriticalPct < 98) {
+    console.error(
+      `FAIL: only ${fmtPct(overallCriticalPct)} of critical constraints preserved (need >= 98%). See docs/PLAN.md §5.`,
+    );
+    process.exitCode = 1;
   }
   if (ai.measured.length) {
     for (const row of ai.measured) {

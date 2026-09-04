@@ -4,6 +4,10 @@
   --surface2: #22263a;
   --border: #2e3350;
   --accent: #6366f1;
+  /* A touch darker than --accent: white text on solid --accent measures
+     4.46:1, just under the 4.5:1 WCAG AA threshold for normal-size text.
+     Used only where text sits directly on a solid accent background. */
+  --accent-contrast: #4f52dd;
   --accent-light: #a5b4fc;
   --accent-rose: #f43f5e;
   --text: #e8eaf6;
@@ -201,7 +205,7 @@ header {
 }
 
 .level-btn.active {
-  background: var(--accent);
+  background: var(--accent-contrast);
   color: #fff;
 }
 
@@ -764,6 +768,11 @@ textarea::placeholder {
 .faq-a {
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.faq-a a {
+  color: var(--accent-light);
+  text-decoration: underline;
 }
 
 .savings-note {
@@ -1391,7 +1400,7 @@ footer {
 
 footer a {
   color: var(--accent-light);
-  text-decoration: none;
+  text-decoration: underline;
 }
 
 /* Copy success */

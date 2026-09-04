@@ -17,7 +17,9 @@
           "criticalKept": 434,
           "criticalPreservedPct": 100,
           "blockedChanges": 0,
-          "promptsWithBlockedChanges": 0
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 124,
+          "protectedRegionViolations": 0
         },
         {
           "level": "balanced",
@@ -30,7 +32,9 @@
           "criticalKept": 434,
           "criticalPreservedPct": 100,
           "blockedChanges": 0,
-          "promptsWithBlockedChanges": 0
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 124,
+          "protectedRegionViolations": 0
         },
         {
           "level": "aggressive",
@@ -43,7 +47,9 @@
           "criticalKept": 434,
           "criticalPreservedPct": 100,
           "blockedChanges": 0,
-          "promptsWithBlockedChanges": 0
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 124,
+          "protectedRegionViolations": 0
         }
       ]
     },
@@ -63,7 +69,9 @@
           "criticalKept": 60,
           "criticalPreservedPct": 100,
           "blockedChanges": 0,
-          "promptsWithBlockedChanges": 0
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 18,
+          "protectedRegionViolations": 0
         },
         {
           "level": "balanced",
@@ -76,7 +84,9 @@
           "criticalKept": 60,
           "criticalPreservedPct": 100,
           "blockedChanges": 0,
-          "promptsWithBlockedChanges": 0
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 18,
+          "protectedRegionViolations": 0
         },
         {
           "level": "aggressive",
@@ -89,7 +99,9 @@
           "criticalKept": 60,
           "criticalPreservedPct": 100,
           "blockedChanges": 0,
-          "promptsWithBlockedChanges": 0
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 18,
+          "protectedRegionViolations": 0
         }
       ]
     }
