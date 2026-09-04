@@ -10,7 +10,7 @@
  * All three implementations are plain `fetch` against the official REST
  * endpoints — no vendor SDK. The app is a static page with no backend and the
  * user's own key, so bundling three SDKs to send three JSON bodies would cost
- * bundle size for nothing. See docs/PLAN.md §6.5 for the decision.
+ * bundle size for nothing. See docs/PLAN.md §6.6 for the decision.
  */
 
 /** A JSON Schema object, in the subset all three providers accept. */

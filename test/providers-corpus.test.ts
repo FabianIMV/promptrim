@@ -7,7 +7,7 @@
  * calibrated by hand, and what the number therefore measures is the
  * pipeline's contribution: how much of a realistic loss the two-attempt repair
  * loop recovers. It is not a measurement of Claude, GPT or Gemini, and
- * docs/PLAN.md §6.5 records that the real-model number is still owed — Phase 6
+ * docs/PLAN.md §6.6 records that the real-model number is still owed — Phase 6
  * owns the reproducible benchmark that can spend real tokens.
  *
  * The simulator is deliberately imperfect on both sides:

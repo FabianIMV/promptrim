@@ -98,7 +98,7 @@ Before running, the app shows what the pipeline itself will cost.
 |----------|----------------|---------|----------|
 | Anthropic | Claude Opus 5, Sonnet 5, Haiku 4.5 | `claude-opus-5` | `claude-haiku-4-5` |
 | OpenAI | GPT-5.6 Sol, Terra, Luna | `gpt-5.6-sol` | `gpt-5.6-luna` |
-| Google | Gemini 3.8 Flash, 3.5 Flash-Lite, 2.5 Pro/Flash | `gemini-3.8-flash` | `gemini-3.5-flash-lite` |
+| Google | Gemini 3.8 Flash, 2.5 Pro, 2.5 Flash | `gemini-3.8-flash` | `gemini-2.5-flash` |
 
 ---
 

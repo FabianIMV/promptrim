@@ -1,25 +1,35 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import {
+  adviseCost,
   allModels,
+  buildCacheReady,
   buildLedger,
   changeKey,
   compress,
   costForTokens,
   countTokensForModel,
+  defaultIntervalSeconds,
   extractConstraints,
   getModel,
   LEVELS,
   projectDiff,
   projectedMonthlyCost,
+  recommend,
   restoreConstraint,
+  scaleCompressedTokens,
+  splitPrompt,
 } from '../core';
 import type {
   BlockedChange,
+  CacheReadyResult,
   Change,
   Constraint,
+  CostAdvice,
   Ledger,
   Level,
   ModelPricing,
+  PromptSplit,
+  Recommendation,
   TokenCountResult,
 } from '../core';
 import {
@@ -27,15 +37,16 @@ import {
   estimateAiCost,
   formatUsd,
   getProvider,
+  isRemembering,
   loadKeys,
   PROVIDERS,
   runAiPipeline,
   saveKey,
   setRemembering,
-  isRemembering,
 } from '../providers';
 import type { AiCostEstimate, AiStep, AiVerdict, ProviderId } from '../providers';
 import { AiPanel } from './AiPanel';
+import { CostAdvisor } from './CostAdvisor';
 import { DiffView } from './DiffView';
 import { LedgerPanel } from './LedgerPanel';
 import { RulesPanel } from './RulesPanel';
@@ -46,6 +57,21 @@ const DEFAULT_MODEL_ID = 'claude-sonnet-5';
 const DEFAULT_CALLS_PER_DAY = 1000;
 /** Long enough that typing does not trigger a tokenizer run per keystroke. */
 const ESTIMATE_DEBOUNCE_MS = 400;
+
+/**
+ * How far apart two calls are. The gap, not the volume, decides which cache TTL
+ * (if any) can hold the prefix, so it is an input of its own — "auto" just
+ * spreads `callsPerDay` evenly over 24 h.
+ */
+const CALL_GAPS = [
+  { id: 'auto', label: 'Auto (even over 24 h)', seconds: null },
+  { id: 'burst', label: 'Back to back (< 1 min)', seconds: 30 },
+  { id: 'minutes', label: 'A few minutes apart', seconds: 300 },
+  { id: 'hourly', label: 'About an hour apart', seconds: 3600 },
+  { id: 'sparse', label: 'Hours apart', seconds: 4 * 3600 },
+] as const;
+
+type CallGapId = (typeof CALL_GAPS)[number]['id'];
 
 const LEVEL_LABELS: Record<Level, string> = {
   light: 'Light',
@@ -119,6 +145,13 @@ export function App() {
   const [run, setRun] = useState<Run | null>(null);
   const [disabledChangeKeys, setDisabledChangeKeys] = useState<Set<string>>(new Set());
   const [disabledRuleIds, setDisabledRuleIds] = useState<Set<string>>(new Set());
+  const [callGap, setCallGap] = useState<CallGapId>('auto');
+  const [advisor, setAdvisor] = useState<{
+    advice: CostAdvice;
+    recommendation: Recommendation;
+    split: PromptSplit;
+  } | null>(null);
+  const [cacheReady, setCacheReady] = useState<CacheReadyResult | null>(null);
   const apiKeyRef = useRef<HTMLInputElement | null>(null);
 
   const provider = getProvider(providerId) ?? PROVIDERS[0]!;
@@ -196,6 +229,90 @@ export function App() {
     };
   }, [aiMode, input, level, provider, compressModel, verifyModel, apiKey]);
 
+  const gapSeconds = CALL_GAPS.find((gap) => gap.id === callGap)?.seconds ?? null;
+  const effectiveGapSeconds = gapSeconds ?? defaultIntervalSeconds(callsPerDay);
+
+  // The Cost Advisor runs on the last compression: it needs both the original
+  // and the compressed prompt to price "compress only" against "reorder +
+  // cache". Token counts can be async (exact tokenizer, Gemini endpoint), so it
+  // lives in an effect and is recomputed whenever the output, the target model
+  // or the traffic assumptions change.
+  useEffect(() => {
+    if (!run || !output) {
+      setAdvisor(null);
+      return;
+    }
+    const source = run.source;
+    const split = splitPrompt(source);
+    const dynamicText = split.reorderedSuffix;
+    // Fast mode can compress the dynamic slice for real; AI mode cannot (the
+    // provider only returned one string), so its share is scaled instead.
+    const compressedDynamicText = aiMode
+      ? null
+      : compress(dynamicText, level, { disabledRuleIds: [...disabledRuleIds] }).output;
+
+    let cancelled = false;
+    void (async () => {
+      const count = (text: string) => countTokensForModel(text, targetModel, countingKey);
+      const [prefix, dynamic, today, compressedDynamic] = await Promise.all([
+        count(split.reorderedPrefix),
+        count(dynamicText),
+        count(split.staticPrefix),
+        compressedDynamicText === null ? null : count(compressedDynamicText),
+      ]);
+      if (cancelled) return;
+      const advice = adviseCost(targetModel, {
+        originalTokens: inTokenResult.tokens,
+        compressedTokens: outTokenResult.tokens,
+        prefixTokens: prefix.tokens,
+        dynamicTokens: dynamic.tokens,
+        compressedDynamicTokens:
+          compressedDynamic?.tokens ??
+          scaleCompressedTokens(dynamic.tokens, inTokenResult.tokens, outTokenResult.tokens),
+        cacheableTodayTokens: today.tokens,
+        callsPerDay,
+        ...(gapSeconds === null ? {} : { intervalSeconds: gapSeconds }),
+      });
+      setAdvisor({ advice, recommendation: recommend(advice, split), split });
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    run,
+    output,
+    aiMode,
+    level,
+    disabledRuleIds,
+    targetModel,
+    countingKey,
+    callsPerDay,
+    gapSeconds,
+    inTokenResult,
+    outTokenResult,
+  ]);
+
+  const onGenerateCacheReady = useCallback(() => {
+    if (!run || !advisor) return;
+    setCacheReady(
+      buildCacheReady(run.source, targetModel, {
+        ttl: advisor.advice.cache.ttl,
+        split: advisor.split,
+      }),
+    );
+  }, [run, advisor, targetModel]);
+
+  const onCopyCacheReady = useCallback(async () => {
+    if (!cacheReady) return;
+    try {
+      await navigator.clipboard.writeText(cacheReady.text);
+    } catch {
+      return;
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, [cacheReady]);
+
   const onToggleAi = useCallback((next: boolean) => {
     setAiMode(next);
     try {
@@ -240,6 +357,7 @@ export function App() {
     setRun(null);
     setAiSteps(null);
     setAiOutcome(null);
+    setCacheReady(null);
     setDisabledChangeKeys(new Set());
   }, []);
 
@@ -352,6 +470,7 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setAiOutcome(null);
+    setCacheReady(null);
     setDisabledChangeKeys(new Set());
     setBusy(true);
 
@@ -450,6 +569,7 @@ export function App() {
     setRun(null);
     setAiSteps(null);
     setAiOutcome(null);
+    setCacheReady(null);
     setDisabledChangeKeys(new Set());
   }, []);
 
@@ -516,8 +636,23 @@ export function App() {
             }}
           />
         </label>
+        <label class="cost-field">
+          <span>Gap between calls</span>
+          <select
+            aria-label="Typical gap between two calls"
+            value={callGap}
+            onChange={(e) => setCallGap((e.currentTarget as HTMLSelectElement).value as CallGapId)}
+          >
+            {CALL_GAPS.map((gap) => (
+              <option key={gap.id} value={gap.id}>
+                {gap.label}
+              </option>
+            ))}
+          </select>
+        </label>
         <span class="cost-hint">
-          Prices verified {targetModel.last_verified} ·{' '}
+          ≈{formatGap(effectiveGapSeconds)} between calls · Prices verified{' '}
+          {targetModel.last_verified} ·{' '}
           <a href={targetModel.source_url} target="_blank" rel="noopener noreferrer">
             source
           </a>
@@ -578,6 +713,17 @@ export function App() {
           </div>
         )}
       </div>
+
+      {advisor && (
+        <CostAdvisor
+          advice={advisor.advice}
+          recommendation={advisor.recommendation}
+          split={advisor.split}
+          cacheReady={cacheReady}
+          onGenerate={onGenerateCacheReady}
+          onCopyCacheReady={onCopyCacheReady}
+        />
+      )}
 
       {ledger && (
         <LedgerPanel
@@ -678,4 +824,12 @@ function spentUsd(
     costForTokens(usage.inputTokens, model.input_per_mtok) +
     costForTokens(usage.outputTokens, model.output_per_mtok)
   );
+}
+
+/** "8.6 s", "5 min", "2.4 h" — the gap the advisor is assuming. */
+function formatGap(seconds: number): string {
+  if (!Number.isFinite(seconds)) return ' a very long time';
+  if (seconds < 90) return `${seconds < 10 ? seconds.toFixed(1) : Math.round(seconds)} s`;
+  if (seconds < 5400) return `${Math.round(seconds / 60)} min`;
+  return `${(seconds / 3600).toFixed(1)} h`;
 }

@@ -9,9 +9,12 @@
  *  - **Structured output** is `generationConfig.responseMimeType = "application/json"`
  *    plus `generationConfig.responseSchema` (camelCase on REST).
  *    https://ai.google.dev/gemini-api/docs/structured-output
- *  - **Models**: `gemini-3.8-flash` (current stable Flash, the default here),
- *    `gemini-3.5-flash-lite` (default verifier), plus the 2.5 pair the app
- *    already knew about. https://ai.google.dev/gemini-api/docs/models
+ *  - **Models**: `gemini-3.8-flash` (current stable Flash, the default here)
+ *    plus the 2.5 pair the app already knew about; `gemini-2.5-flash` is the
+ *    default verifier. The Flash-Lite models are deliberately absent: Google
+ *    does not publish their minimum cacheable prefix, which the Cost Advisor
+ *    of Phase 4 requires for every priced model.
+ *    https://ai.google.dev/gemini-api/docs/models
  *  - The system prompt goes in `systemInstruction`, not in `contents`.
  *
  * `orderModels`, `getGeminiModels` and `formatGeminiFailure` are the model
@@ -37,12 +40,7 @@ export type CompressionLevel = 'light' | 'balanced' | 'aggressive';
 const LABEL = 'Gemini';
 const API_ROOT = 'https://generativelanguage.googleapis.com/v1beta';
 
-export const GEMINI_MODELS = [
-  'gemini-3.8-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-2.5-pro',
-  'gemini-2.5-flash',
-] as const;
+export const GEMINI_MODELS = ['gemini-3.8-flash', 'gemini-2.5-pro', 'gemini-2.5-flash'] as const;
 
 /**
  * Preferred models in priority order for discovery. Exact names are tried
@@ -50,12 +48,7 @@ export const GEMINI_MODELS = [
  * immediately after their base name so priority is preserved even when Google
  * only publishes dated snapshots.
  */
-export const PREFERRED_MODELS = [
-  'gemini-3.8-flash',
-  'gemini-3.5-flash-lite',
-  'gemini-2.5-flash',
-  'gemini-2.5-pro',
-] as const;
+export const PREFERRED_MODELS = ['gemini-3.8-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'] as const;
 
 interface ModelListResponse {
   models?: { name?: string; supportedGenerationMethods?: string[] }[];
@@ -219,7 +212,7 @@ export const geminiProvider: ProviderClient = {
   label: 'Google Gemini',
   models: GEMINI_MODELS,
   defaultModel: 'gemini-3.8-flash',
-  defaultVerifierModel: 'gemini-3.5-flash-lite',
+  defaultVerifierModel: 'gemini-2.5-flash',
   keyLabel: 'Gemini API key',
   keyPlaceholder: 'AIza...',
   keyHelpUrl: 'https://aistudio.google.com/app/apikey',
