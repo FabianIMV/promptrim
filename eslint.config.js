@@ -24,4 +24,10 @@ export default tseslint.config(
     files: ['eslint.config.js', 'vite.config.ts'],
     languageOptions: { globals: { ...globals.node } },
   },
+  {
+    // A Node CLI script, not app code: it reports progress with console.log.
+    files: ['bench/**/*.ts'],
+    languageOptions: { globals: { ...globals.node } },
+    rules: { 'no-console': 'off' },
+  },
 );
