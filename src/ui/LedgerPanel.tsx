@@ -2,16 +2,29 @@ import { useMemo } from 'preact/hooks';
 import { CONSTRAINT_TYPES, TYPE_LABELS } from '../core';
 import type { BlockedChange, Constraint, ConstraintCheck, ConstraintType, Ledger } from '../core';
 
+/** What the AI verifier (Phase 5, step B) said about one constraint. */
+export interface VerifierVerdict {
+  preserved: boolean;
+  evidence: string;
+}
+
 interface Props {
   ledger: Ledger;
   /** Changes the ledger reverted, so the user can see why Aggressive stopped. */
   blocked: BlockedChange[];
   onRestore: (constraint: Constraint) => void;
+  /**
+   * The independent model verification of Phase 5, by constraint id. It is
+   * shown as evidence next to the local ✓/✗, never in place of it: a model
+   * saying "preserved" about a phrase that is not in the output is exactly the
+   * false ✓ the ledger exists to prevent.
+   */
+  verdicts?: Record<string, VerifierVerdict>;
 }
 
 const MAX_ANCHOR_CHARS = 90;
 
-export function LedgerPanel({ ledger, blocked, onRestore }: Props) {
+export function LedgerPanel({ ledger, blocked, onRestore, verdicts }: Props) {
   const { report, duplicates } = ledger;
 
   const groups = useMemo(() => {
@@ -42,6 +55,9 @@ export function LedgerPanel({ ledger, blocked, onRestore }: Props) {
         </span>
         <span class="ledger-sub">
           {report.criticalPreserved}/{report.criticalTotal} critical
+          {verdicts
+            ? ` · ${auditedCount(report.checks, verdicts)} audited by the verifier model`
+            : ''}
         </span>
       </header>
 
@@ -65,26 +81,42 @@ export function LedgerPanel({ ledger, blocked, onRestore }: Props) {
             </span>
           </h3>
           <ul class="ledger-list">
-            {group.checks.map((check) => (
-              <li key={check.constraint.id} class={check.preserved ? 'kept' : 'lost'}>
-                <span class="ledger-mark" aria-hidden="true">
-                  {check.preserved ? '✓' : '✗'}
-                </span>
-                <span class="ledger-anchor" title={check.evidence ?? check.constraint.label}>
-                  <span class="sr-only">{check.preserved ? 'Preserved: ' : 'Lost: '}</span>
-                  {truncate(check.constraint.anchor)}
-                </span>
-                {!check.preserved && (
-                  <button
-                    type="button"
-                    class="ledger-restore"
-                    onClick={() => onRestore(check.constraint)}
-                  >
-                    Restore
-                  </button>
-                )}
-              </li>
-            ))}
+            {group.checks.map((check) => {
+              const verdict = verdicts?.[check.constraint.id];
+              const disputed = verdict !== undefined && verdict.preserved !== check.preserved;
+              return (
+                <li key={check.constraint.id} class={check.preserved ? 'kept' : 'lost'}>
+                  <span class="ledger-mark" aria-hidden="true">
+                    {check.preserved ? '✓' : '✗'}
+                  </span>
+                  <span class="ledger-anchor" title={check.evidence ?? check.constraint.label}>
+                    <span class="sr-only">{check.preserved ? 'Preserved: ' : 'Lost: '}</span>
+                    {truncate(check.constraint.anchor)}
+                    {verdict?.evidence && (
+                      <em class="ledger-evidence">
+                        Verifier evidence: “{truncate(verdict.evidence)}”
+                      </em>
+                    )}
+                    {disputed && (
+                      <em class="ledger-dispute">
+                        {verdict.preserved
+                          ? 'The verifier model says this survived, but the exact wording is not in the output. Treated as lost.'
+                          : 'The wording is still in the output, but the verifier model says the demand was weakened.'}
+                      </em>
+                    )}
+                  </span>
+                  {!check.preserved && (
+                    <button
+                      type="button"
+                      class="ledger-restore"
+                      onClick={() => onRestore(check.constraint)}
+                    >
+                      Restore
+                    </button>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ))}
@@ -135,6 +167,13 @@ export function LedgerPanel({ ledger, blocked, onRestore }: Props) {
       )}
     </section>
   );
+}
+
+function auditedCount(
+  checks: readonly ConstraintCheck[],
+  verdicts: Record<string, VerifierVerdict>,
+): number {
+  return checks.filter((check) => verdicts[check.constraint.id]).length;
 }
 
 function truncate(text: string, max = MAX_ANCHOR_CHARS): string {

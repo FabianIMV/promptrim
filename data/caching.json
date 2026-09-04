@@ -14,8 +14,16 @@
       "below_minimum_quote": "Shorter prompts cannot be cached, even if marked with `cache_control`. Any requests to cache fewer than this number of tokens will be processed without caching, and no error is returned.",
       "breakpoint_hint": "Place `cache_control` on the last block whose prefix is identical across the requests you want to share a cache.",
       "ttls": [
-        { "id": "anthropic-5m", "label": "5-minute cache", "seconds": 300 },
-        { "id": "anthropic-1h", "label": "1-hour cache", "seconds": 3600 }
+        {
+          "id": "anthropic-5m",
+          "label": "5-minute cache",
+          "seconds": 300
+        },
+        {
+          "id": "anthropic-1h",
+          "label": "1-hour cache",
+          "seconds": 3600
+        }
       ],
       "docs_url": "https://platform.claude.com/docs/en/build-with-claude/prompt-caching",
       "pricing_url": "https://platform.claude.com/docs/en/about-claude/pricing",
@@ -33,8 +41,16 @@
       "below_minimum_quote": "The minimum cacheable prompt length is 1,024 tokens for GPT-5.6 and later and 2,048 tokens for models older than GPT-5.6.",
       "breakpoint_hint": "Put stable developer instructions and shared reference material first; any change before a breakpoint stops the rest of the prefix from matching.",
       "ttls": [
-        { "id": "openai-30m", "label": "30 min since the last use", "seconds": 1800 },
-        { "id": "openai-5m", "label": "~5 min of inactivity", "seconds": 300 }
+        {
+          "id": "openai-30m",
+          "label": "30 min since the last use",
+          "seconds": 1800
+        },
+        {
+          "id": "openai-5m",
+          "label": "~5 min of inactivity",
+          "seconds": 300
+        }
       ],
       "docs_url": "https://developers.openai.com/api/docs/guides/prompt-caching",
       "pricing_url": "https://developers.openai.com/api/docs/pricing",
@@ -52,8 +68,16 @@
       "below_minimum_quote": "The minimum input token count for context caching varies by model. The maximum is the same as the maximum for the given model.",
       "breakpoint_hint": "Try putting large and common contents at the beginning of your prompt, and send requests with a similar prefix in a short amount of time.",
       "ttls": [
-        { "id": "gemini-5m", "label": "5-minute cache", "seconds": 300 },
-        { "id": "gemini-1h", "label": "1-hour cache (default TTL)", "seconds": 3600 }
+        {
+          "id": "gemini-5m",
+          "label": "5-minute cache",
+          "seconds": 300
+        },
+        {
+          "id": "gemini-1h",
+          "label": "1-hour cache (default TTL)",
+          "seconds": 3600
+        }
       ],
       "docs_url": "https://ai.google.dev/gemini-api/docs/generate-content/caching",
       "pricing_url": "https://ai.google.dev/gemini-api/docs/pricing",
@@ -61,7 +85,10 @@
     }
   ],
   "models": {
-    "claude-opus-5": { "min_cacheable_tokens": 512, "ttl_ids": ["anthropic-5m", "anthropic-1h"] },
+    "claude-opus-5": {
+      "min_cacheable_tokens": 512,
+      "ttl_ids": ["anthropic-5m", "anthropic-1h"]
+    },
     "claude-sonnet-5": {
       "min_cacheable_tokens": 1024,
       "ttl_ids": ["anthropic-5m", "anthropic-1h"]
@@ -70,12 +97,41 @@
       "min_cacheable_tokens": 4096,
       "ttl_ids": ["anthropic-5m", "anthropic-1h"]
     },
-    "gpt-5.6-sol": { "min_cacheable_tokens": 1024, "ttl_ids": ["openai-30m"] },
-    "gpt-5.6-luna": { "min_cacheable_tokens": 1024, "ttl_ids": ["openai-30m"] },
-    "gpt-5": { "min_cacheable_tokens": 2048, "ttl_ids": ["openai-5m"] },
-    "gpt-5-mini": { "min_cacheable_tokens": 2048, "ttl_ids": ["openai-5m"] },
-    "gpt-4o": { "min_cacheable_tokens": 2048, "ttl_ids": ["openai-5m"] },
-    "gemini-2.5-pro": { "min_cacheable_tokens": 2048, "ttl_ids": ["gemini-5m", "gemini-1h"] },
-    "gemini-2.5-flash": { "min_cacheable_tokens": 2048, "ttl_ids": ["gemini-5m", "gemini-1h"] }
+    "gpt-5.6-sol": {
+      "min_cacheable_tokens": 1024,
+      "ttl_ids": ["openai-30m"]
+    },
+    "gpt-5.6-terra": {
+      "min_cacheable_tokens": 1024,
+      "ttl_ids": ["openai-30m"]
+    },
+    "gpt-5.6-luna": {
+      "min_cacheable_tokens": 1024,
+      "ttl_ids": ["openai-30m"]
+    },
+    "gpt-5": {
+      "min_cacheable_tokens": 2048,
+      "ttl_ids": ["openai-5m"]
+    },
+    "gpt-5-mini": {
+      "min_cacheable_tokens": 2048,
+      "ttl_ids": ["openai-5m"]
+    },
+    "gpt-4o": {
+      "min_cacheable_tokens": 2048,
+      "ttl_ids": ["openai-5m"]
+    },
+    "gemini-3.8-flash": {
+      "min_cacheable_tokens": 4096,
+      "ttl_ids": ["gemini-5m", "gemini-1h"]
+    },
+    "gemini-2.5-pro": {
+      "min_cacheable_tokens": 2048,
+      "ttl_ids": ["gemini-5m", "gemini-1h"]
+    },
+    "gemini-2.5-flash": {
+      "min_cacheable_tokens": 2048,
+      "ttl_ids": ["gemini-5m", "gemini-1h"]
+    }
   }
 }

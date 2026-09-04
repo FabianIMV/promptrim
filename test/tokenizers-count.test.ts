@@ -43,3 +43,37 @@ describe('countTokensForModel', () => {
     expect(result).toEqual({ tokens: 7, exact: true });
   });
 });
+
+describe('countTokensForModel — Anthropic with a key (Phase 5)', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it('routes anthropic models with a key to the real endpoint, marked exact', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ input_tokens: 11 }),
+    }) as never;
+
+    const result = await countTokensForModel(
+      'hi',
+      { id: 'claude-opus-5', provider: 'anthropic' },
+      'sk-ant',
+    );
+    expect(result).toEqual({ tokens: 11, exact: true });
+  });
+
+  it('marks the count inexact when the endpoint failed and the estimate answered', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({ ok: false, status: 401 }) as never;
+
+    const text = 'Never disclose the key.';
+    const result = await countTokensForModel(
+      text,
+      { id: 'claude-opus-5', provider: 'anthropic' },
+      'sk-ant-bad',
+    );
+    expect(result).toEqual({ tokens: estimateClaudeTokens(text), exact: false });
+  });
+});

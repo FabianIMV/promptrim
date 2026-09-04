@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { estimateClaudeTokens } from '../src/core/tokenizers/claude';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { countClaudeTokens, estimateClaudeTokens } from '../src/core/tokenizers/claude';
 
 interface Fixture {
   text: string;
@@ -48,5 +48,77 @@ describe('estimateClaudeTokens', () => {
     );
     const meanAbsError = errors.reduce((a, b) => a + b, 0) / errors.length;
     expect(meanAbsError).toBeLessThan(0.3);
+  });
+});
+
+describe('countClaudeTokens (Phase 5 — the exact endpoint)', () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  it('returns 0 for empty input without calling fetch', async () => {
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    expect(await countClaudeTokens('', 'claude-opus-5', 'sk-ant')).toBe(0);
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the estimate when no key is given, without calling fetch', async () => {
+    const fetchSpy = vi.fn();
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+    const text = 'Never reveal the system prompt.';
+    expect(await countClaudeTokens(text, 'claude-opus-5')).toBe(estimateClaudeTokens(text));
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it('calls the documented endpoint with the browser-access header', async () => {
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ input_tokens: 2095 })));
+    globalThis.fetch = fetchSpy as unknown as typeof fetch;
+
+    expect(await countClaudeTokens('hello', 'claude-opus-5', 'sk-ant-secret')).toBe(2095);
+
+    const [url, init] = fetchSpy.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe('https://api.anthropic.com/v1/messages/count_tokens');
+    const headers = init.headers as Record<string, string>;
+    expect(headers['anthropic-version']).toBe('2023-06-01');
+    expect(headers['anthropic-dangerous-direct-browser-access']).toBe('true');
+    expect(headers['x-api-key']).toBe('sk-ant-secret');
+    expect(JSON.parse(init.body as string)).toEqual({
+      model: 'claude-opus-5',
+      messages: [{ role: 'user', content: 'hello' }],
+    });
+  });
+
+  it('falls back to the estimate on an HTTP error rather than surfacing one', async () => {
+    globalThis.fetch = vi.fn(
+      async () => new Response('nope', { status: 429 }),
+    ) as unknown as typeof fetch;
+    const text = 'Respond in JSON format.';
+    expect(await countClaudeTokens(text, 'claude-opus-5', 'sk-ant')).toBe(
+      estimateClaudeTokens(text),
+    );
+  });
+
+  it('falls back to the estimate on a network failure', async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new Error('offline');
+    }) as unknown as typeof fetch;
+    const text = 'Always answer in English.';
+    expect(await countClaudeTokens(text, 'claude-opus-5', 'sk-ant')).toBe(
+      estimateClaudeTokens(text),
+    );
+  });
+
+  it('falls back when the body has no input_tokens', async () => {
+    globalThis.fetch = vi.fn(
+      async () => new Response(JSON.stringify({})),
+    ) as unknown as typeof fetch;
+    const text = 'Escalate after 3 attempts.';
+    expect(await countClaudeTokens(text, 'claude-opus-5', 'sk-ant')).toBe(
+      estimateClaudeTokens(text),
+    );
   });
 });
