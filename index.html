@@ -59,11 +59,14 @@
       "priceCurrency": "USD"
     },
     "featureList": [
-      "Prompt token compression",
-      "AI-powered rewriting",
-      "Rule-based fast compression",
-      "Token count estimation",
+      "Rule-based prompt compression with protected code, strings, URLs and variables",
+      "Constraint ledger with a verifiable checklist and one-click restore",
+      "AI-powered rewriting with independent verification and automatic repair",
+      "Exact token counting per provider",
       "Compress vs cache cost advisor",
+      "Share a prompt by URL, or import/export as .txt, .md or .json",
+      "Batch compression of multiple prompts at once",
+      "Offline-capable Fast mode (PWA)",
       "Works with any LLM"
     ],
     "screenshot": "https://fabianimv.github.io/promptrim/og-image.png",
@@ -263,6 +266,10 @@
     <div class="faq-item">
       <div class="faq-q">How is the token count calculated?</div>
       <div class="faq-a">It depends on the target model you pick. For OpenAI models we run the real o200k tokenizer in your browser, so the count is exact. For Gemini, entering your API key gets you an exact count from Google's own countTokens endpoint; without a key it falls back to an estimate, same as Claude, which has no public browser-side tokenizer.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I know it didn't lose anything?</div>
+      <div class="faq-a">You don't have to take the app's word for it — check the checklist. Before compressing, PromptTrim extracts every prohibition, requirement, output format, number and quoted literal from your prompt. After compressing, it verifies each one against the result and shows a ✓ or ✗ per item, with a <strong>Restore</strong> button next to anything lost. That verification always runs locally in your browser, even in AI mode, where it has the final say over what the model itself reports.</div>
     </div>
   </section>
 
