@@ -8,25 +8,29 @@
   <meta name="google-site-verification" content="kE_5YEb4xEOwuTZBkoJ93CoKsHERbRQzfJTvptiqZOs" />
 
   <!-- Primary SEO -->
-  <title>PromptTrim – Free AI Prompt Compressor | Save Tokens & Cut AI Costs</title>
-  <meta name="description" content="Compress your AI prompts instantly. PromptTrim reduces ChatGPT, Claude & Gemini prompt tokens by up to 70% while preserving meaning. Free tool, no signup required." />
+  <title>PromptTrim – The Prompt Compressor That Proves It Didn't Break Your Prompt</title>
+  <meta name="description" content="Compress ChatGPT, Claude & Gemini prompts locally in your browser. Code, strings and variables are never touched, and a constraint checklist proves nothing else was lost. Real, reproducible benchmark — free, no signup." />
   <meta name="keywords" content="prompt compressor, token reducer, AI prompt optimizer, save tokens, reduce AI costs, ChatGPT prompt compressor, Claude prompt optimizer, prompt compression tool" />
   <meta name="author" content="PromptTrim" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
   <link rel="canonical" href="https://fabianimv.github.io/promptrim/" />
 
+  <!-- PWA: offline Fast mode -->
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="theme-color" content="#0f1117" />
+
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://fabianimv.github.io/promptrim/" />
-  <meta property="og:title" content="PromptTrim – Free AI Prompt Compressor" />
-  <meta property="og:description" content="Reduce AI prompt tokens by up to 70% instantly. Works with ChatGPT, Claude, Gemini and any LLM. Free, no signup." />
+  <meta property="og:title" content="PromptTrim – The Prompt Compressor That Proves It Didn't Break Your Prompt" />
+  <meta property="og:description" content="Code, strings and variables are never touched. A constraint checklist proves nothing else was lost. Works with ChatGPT, Claude, Gemini and any LLM. Free, no signup." />
   <meta property="og:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
   <meta property="og:locale" content="en_US" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="PromptTrim – Free AI Prompt Compressor" />
-  <meta name="twitter:description" content="Reduce AI prompt tokens by up to 70%. Free tool for ChatGPT, Claude & Gemini users." />
+  <meta name="twitter:title" content="PromptTrim – The Prompt Compressor That Proves It Didn't Break Your Prompt" />
+  <meta name="twitter:description" content="Code, strings and variables are never touched. A constraint checklist proves nothing else was lost. Free tool for ChatGPT, Claude & Gemini users." />
   <meta name="twitter:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
 
   <!-- Geo targeting -->
@@ -36,6 +40,7 @@
 
   <!-- Alternate languages -->
   <link rel="alternate" hreflang="en" href="https://fabianimv.github.io/promptrim/" />
+  <link rel="alternate" hreflang="es" href="https://fabianimv.github.io/promptrim/es/" />
   <link rel="alternate" hreflang="x-default" href="https://fabianimv.github.io/promptrim/" />
 
   <!-- JSON-LD Structured Data -->
@@ -45,7 +50,7 @@
     "@type": "WebApplication",
     "name": "PromptTrim",
     "url": "https://fabianimv.github.io/promptrim/",
-    "description": "Free AI prompt compressor. Reduce tokens in your ChatGPT, Claude, and Gemini prompts by up to 70% while preserving meaning.",
+    "description": "Free AI prompt compressor for ChatGPT, Claude and Gemini. Protected regions and a constraint ledger prove instructions, code and variables survive compression — verified by a public, reproducible benchmark.",
     "applicationCategory": "UtilityApplication",
     "operatingSystem": "Any",
     "offers": {
@@ -54,11 +59,14 @@
       "priceCurrency": "USD"
     },
     "featureList": [
-      "Prompt token compression",
-      "AI-powered rewriting",
-      "Rule-based fast compression",
-      "Token count estimation",
+      "Rule-based prompt compression with protected code, strings, URLs and variables",
+      "Constraint ledger with a verifiable checklist and one-click restore",
+      "AI-powered rewriting with independent verification and automatic repair",
+      "Exact token counting per provider",
       "Compress vs cache cost advisor",
+      "Share a prompt by URL, or import/export as .txt, .md or .json",
+      "Batch compression of multiple prompts at once",
+      "Offline-capable Fast mode (PWA)",
       "Works with any LLM"
     ],
     "screenshot": "https://fabianimv.github.io/promptrim/og-image.png",
@@ -66,1278 +74,7 @@
   }
   </script>
 
-  <style>
-    :root {
-      --bg: #0f1117;
-      --surface: #1a1d27;
-      --surface2: #22263a;
-      --border: #2e3350;
-      --accent: #6366f1;
-      --accent-light: #a5b4fc;
-      --accent-rose: #f43f5e;
-      --text: #e8eaf6;
-      --text-muted: #8b90a7;
-      --green: #4caf7d;
-      --red: #ff6b6b;
-      --radius: 12px;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      line-height: 1.6;
-    }
-
-    /* HEADER */
-    header {
-      padding: 20px 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid var(--border);
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .logo {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--text);
-      text-decoration: none;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .logo-icon {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--accent), #a78bfa);
-      border-radius: 8px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-    }
-
-    .badge {
-      font-size: 0.7rem;
-      background: rgba(108,99,255,0.2);
-      color: var(--accent-light);
-      border: 1px solid rgba(108,99,255,0.3);
-      padding: 2px 8px;
-      border-radius: 99px;
-      font-weight: 600;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    /* HERO */
-    .hero {
-      text-align: center;
-      padding: 60px 24px 40px;
-      max-width: 720px;
-      margin: 0 auto;
-    }
-
-    .hero h1 {
-      font-size: clamp(2rem, 5vw, 3rem);
-      font-weight: 800;
-      background: linear-gradient(135deg, #fff 0%, var(--accent-light) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      line-height: 1.2;
-      margin-bottom: 16px;
-    }
-
-    .hero p {
-      color: var(--text-muted);
-      font-size: 1.1rem;
-      margin-bottom: 24px;
-    }
-
-    .hero-actions {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      margin-bottom: 24px;
-    }
-
-    .hero-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 14px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      color: var(--text);
-      text-decoration: none;
-      font-size: 0.85rem;
-      font-weight: 600;
-      transition: all 0.15s;
-    }
-
-    .hero-link:hover {
-      border-color: var(--accent-light);
-      color: #fff;
-    }
-
-    .stats {
-      display: flex;
-      justify-content: center;
-      gap: 32px;
-      flex-wrap: wrap;
-    }
-
-    .stat {
-      text-align: center;
-    }
-
-    .stat-num {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--accent-light);
-    }
-
-    .stat-label {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    /* MAIN APP */
-    .app {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 24px 60px;
-    }
-
-    /* CONTROLS */
-    .controls {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      flex-wrap: wrap;
-    }
-
-    .level-group {
-      display: flex;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .level-btn {
-      padding: 8px 16px;
-      font-size: 0.85rem;
-      cursor: pointer;
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      transition: all 0.15s;
-      font-weight: 500;
-    }
-
-    .level-btn.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    .level-btn:hover:not(.active) {
-      background: var(--surface2);
-      color: var(--text);
-    }
-
-    .api-toggle {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin-left: auto;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      cursor: pointer;
-    }
-
-    .api-toggle input[type="checkbox"] {
-      accent-color: var(--accent);
-      width: 16px; height: 16px;
-    }
-
-    .cost-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 16px;
-      flex-wrap: wrap;
-      margin-bottom: 20px;
-      padding: 12px 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-    }
-
-    .cost-field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .cost-field select,
-    .cost-field input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 10px;
-      color: var(--text);
-      font-size: 0.85rem;
-      font-family: inherit;
-      outline: none;
-    }
-
-    .cost-field select:focus,
-    .cost-field input:focus {
-      border-color: var(--accent);
-    }
-
-    .cost-field input[type="number"] {
-      width: 100px;
-    }
-
-    .cost-hint {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      margin-left: auto;
-    }
-
-    .cost-hint a {
-      color: var(--accent-light);
-    }
-
-    .api-key-wrap {
-      display: none;
-      align-items: center;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .api-key-wrap.visible { display: flex; }
-
-    .api-key-wrap input {
-      flex: 1;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-size: 0.85rem;
-      font-family: monospace;
-      outline: none;
-    }
-
-    .api-key-wrap input:focus {
-      border-color: var(--accent);
-    }
-
-    .api-info {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .api-help {
-      margin-top: 10px;
-    }
-
-    /* AI MODE */
-    .ai-panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 18px;
-      margin-top: 12px;
-    }
-
-    .ai-panel-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin: 0 0 12px;
-      color: var(--text);
-    }
-
-    .ai-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 14px;
-      flex-wrap: wrap;
-      margin-bottom: 12px;
-    }
-
-    .ai-key-field { flex: 1 1 260px; }
-
-    .ai-key-field input {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: var(--text);
-      font-size: 0.85rem;
-      font-family: monospace;
-      outline: none;
-      width: 100%;
-    }
-
-    .ai-key-field input:focus { border-color: var(--accent); }
-
-    .ai-remember {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      cursor: pointer;
-      padding-bottom: 8px;
-    }
-
-    .ai-remember input[type="checkbox"] {
-      accent-color: var(--accent);
-      width: 16px; height: 16px;
-    }
-
-    .ai-estimate {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      line-height: 1.6;
-      margin: 0;
-      padding: 10px 12px;
-      background: var(--surface2);
-      border-radius: 8px;
-    }
-
-    .ai-estimate strong { color: var(--accent-light); }
-
-    .ai-steps {
-      list-style: none;
-      margin: 12px 0 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .ai-step {
-      display: flex;
-      align-items: baseline;
-      gap: 10px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      background: var(--surface2);
-      border-radius: 8px;
-      padding: 7px 10px;
-    }
-
-    .ai-step-mark { flex: 0 0 auto; }
-    .ai-step.done .ai-step-mark { color: var(--green); }
-    .ai-step.failed .ai-step-mark { color: var(--red); }
-    .ai-step.running .ai-step-mark { color: var(--accent-light); }
-
-    .ai-step-name {
-      flex: 0 0 70px;
-      font-weight: 600;
-      color: var(--text);
-    }
-
-    .ai-step-detail { flex: 1 1 auto; }
-
-    .ledger-evidence,
-    .ledger-dispute {
-      display: block;
-      margin-top: 4px;
-      font-size: 0.75rem;
-      font-style: normal;
-      color: var(--text-muted);
-    }
-
-    .ledger-dispute { color: var(--accent-light); }
-
-    /* PANELS */
-    .panels {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-    }
-
-    @media (max-width: 768px) {
-      .panels { grid-template-columns: 1fr; }
-    }
-
-    .panel {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      overflow: hidden;
-    }
-
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-      background: var(--surface2);
-    }
-
-    .panel-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-
-    .token-badge {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      background: var(--bg);
-      padding: 2px 10px;
-      border-radius: 99px;
-      border: 1px solid var(--border);
-    }
-
-    .token-badge.improved {
-      color: var(--green);
-      border-color: rgba(76,175,125,0.3);
-      background: rgba(76,175,125,0.08);
-    }
-
-    textarea {
-      width: 100%;
-      min-height: 320px;
-      padding: 16px;
-      background: transparent;
-      border: none;
-      color: var(--text);
-      font-size: 0.9rem;
-      font-family: inherit;
-      resize: vertical;
-      outline: none;
-      line-height: 1.7;
-    }
-
-    textarea::placeholder {
-      color: var(--text-muted);
-    }
-
-    /* BUTTONS */
-    .actions {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      margin: 20px 0;
-      flex-wrap: wrap;
-    }
-
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 12px 28px;
-      border-radius: 10px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      cursor: pointer;
-      border: none;
-      transition: all 0.15s;
-    }
-
-    .btn-primary {
-      background: linear-gradient(135deg, var(--accent), #8b5cf6);
-      color: #fff;
-      box-shadow: 0 4px 20px rgba(108,99,255,0.3);
-    }
-
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 24px rgba(108,99,255,0.4);
-    }
-
-    .btn-primary:active { transform: translateY(0); }
-
-    .btn-primary:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    .btn-ghost {
-      background: var(--surface);
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-    }
-
-    .btn-ghost:hover {
-      color: var(--text);
-      border-color: var(--accent);
-    }
-
-    /* SAVINGS BAR */
-    .savings {
-      display: none;
-      background: var(--surface);
-      border: 1px solid rgba(76,175,125,0.3);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 20px;
-      text-align: center;
-    }
-
-    .savings.visible { display: block; }
-
-    .savings-title {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      margin-bottom: 8px;
-    }
-
-    .savings-row {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 24px;
-      flex-wrap: wrap;
-    }
-
-    .saving-item {
-      text-align: center;
-    }
-
-    .saving-num {
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: var(--green);
-    }
-
-    .saving-label {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    /* LOADING */
-    .spinner {
-      display: inline-block;
-      width: 16px; height: 16px;
-      border: 2px solid rgba(255,255,255,0.3);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.6s linear infinite;
-    }
-
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ERROR */
-    .error {
-      display: none;
-      color: var(--red);
-      font-size: 0.85rem;
-      text-align: center;
-      margin-top: 8px;
-      padding: 10px 16px;
-      background: rgba(255,107,107,0.08);
-      border: 1px solid rgba(255,107,107,0.2);
-      border-radius: 8px;
-    }
-
-    .error.visible { display: block; }
-
-    /* HOW IT WORKS */
-    .how {
-      max-width: 900px;
-      margin: 60px auto 0;
-      padding: 0 24px;
-      text-align: center;
-    }
-
-    .how h2 {
-      font-size: 1.6rem;
-      margin-bottom: 8px;
-    }
-
-    .how-sub {
-      color: var(--text-muted);
-      margin-bottom: 40px;
-    }
-
-    .steps {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
-    }
-
-    .step {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px 20px;
-    }
-
-    .step-icon {
-      font-size: 2rem;
-      margin-bottom: 12px;
-    }
-
-    .step h3 {
-      font-size: 1rem;
-      margin-bottom: 8px;
-    }
-
-    .step p {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    /* FAQ */
-    .faq {
-      max-width: 720px;
-      margin: 60px auto 0;
-      padding: 0 24px;
-    }
-
-    .faq h2 {
-      text-align: center;
-      font-size: 1.6rem;
-      margin-bottom: 32px;
-    }
-
-    .faq-item {
-      border-bottom: 1px solid var(--border);
-      padding: 20px 0;
-    }
-
-    .faq-item:last-child { border: none; }
-
-    .faq-q {
-      font-weight: 600;
-      margin-bottom: 8px;
-      cursor: pointer;
-    }
-
-    .faq-a {
-      color: var(--text-muted);
-      font-size: 0.9rem;
-    }
-
-    .savings-note {
-      margin-top: 10px;
-      text-align: center;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    /* CONSTRAINT LEDGER */
-    .sr-only {
-      position: absolute;
-      width: 1px; height: 1px;
-      padding: 0; margin: -1px;
-      overflow: hidden;
-      clip: rect(0 0 0 0);
-      white-space: nowrap;
-      border: 0;
-    }
-
-    .ledger {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 20px;
-    }
-
-    .ledger-header {
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .ledger-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-right: auto;
-    }
-
-    .ledger-count {
-      font-size: 0.9rem;
-      font-weight: 700;
-    }
-
-    .ledger-count.ok { color: var(--green); }
-    .ledger-count.bad { color: var(--red); }
-
-    .ledger-sub {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }
-
-    .ledger-note {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      margin: 10px 0;
-    }
-
-    .ledger-note.bad { color: var(--red); }
-
-    .ledger-group { margin-top: 12px; }
-
-    .ledger-group-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin-bottom: 6px;
-    }
-
-    .ledger-group-count {
-      font-weight: 400;
-      text-transform: none;
-      letter-spacing: 0;
-    }
-
-    .ledger-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .ledger-list li {
-      display: flex;
-      align-items: flex-start;
-      gap: 8px;
-      font-size: 0.82rem;
-      line-height: 1.45;
-      padding: 3px 6px;
-      border-radius: 6px;
-      background: var(--bg);
-    }
-
-    .ledger-list li.lost { border: 1px solid rgba(255,107,107,0.45); }
-
-    .ledger-mark { flex: 0 0 auto; }
-    .ledger-list li.kept .ledger-mark { color: var(--green); }
-    .ledger-list li.lost .ledger-mark { color: var(--red); }
-
-    .ledger-anchor {
-      flex: 1 1 auto;
-      word-break: break-word;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .ledger-anchor code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.78rem;
-      color: var(--accent-light);
-    }
-
-    .ledger-suggestion {
-      color: var(--text-muted);
-      font-size: 0.76rem;
-    }
-
-    .ledger-restore {
-      flex: 0 0 auto;
-      background: transparent;
-      color: var(--accent-light);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 2px 10px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .ledger-restore:hover,
-    .ledger-restore:focus-visible {
-      border-color: var(--accent);
-      color: var(--text);
-    }
-
-    /* RULES PANEL */
-    .rules-panel {
-      margin-left: 8px;
-      font-size: 0.85rem;
-      color: var(--text-muted);
-    }
-
-    .rules-summary {
-      cursor: pointer;
-      padding: 6px 12px;
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      list-style: none;
-      user-select: none;
-    }
-
-    .rules-summary::-webkit-details-marker { display: none; }
-
-    .rules-summary:hover,
-    .rules-summary:focus-visible {
-      color: var(--text);
-      border-color: var(--accent-light);
-    }
-
-    .rules-body {
-      margin-top: 10px;
-      padding: 14px 16px;
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      max-height: 360px;
-      overflow-y: auto;
-    }
-
-    .rules-note {
-      font-size: 0.78rem;
-      margin-bottom: 12px;
-    }
-
-    .rules-group { margin-bottom: 14px; }
-    .rules-group:last-child { margin-bottom: 0; }
-
-    .rules-group-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-bottom: 6px;
-    }
-
-    .rules-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .rules-item label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      cursor: pointer;
-      color: var(--text);
-      font-size: 0.82rem;
-    }
-
-    .rules-item input[type="checkbox"] {
-      accent-color: var(--accent);
-      width: 15px; height: 15px;
-      flex: 0 0 auto;
-    }
-
-    .rules-item code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.78rem;
-      color: var(--accent-light);
-    }
-
-    .rules-lossy {
-      font-size: 0.68rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-      color: var(--red);
-      border: 1px solid rgba(255,107,107,0.4);
-      border-radius: 999px;
-      padding: 1px 6px;
-    }
-
-    .rules-why {
-      margin: 2px 0 0 23px;
-      font-size: 0.76rem;
-      color: var(--text-muted);
-    }
-
-    /* DIFF VIEW */
-    .diffview {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 20px;
-    }
-
-    .diffview-header {
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 12px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .diffview-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-right: auto;
-    }
-
-    .diffview-legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      font-size: 0.75rem;
-      color: var(--text-muted);
-    }
-
-    .diffview-legend-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-
-    .diffview-rules {
-      list-style: none;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin: 12px 0;
-    }
-
-    .diffview-rule {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 4px 6px 4px 10px;
-      font-size: 0.78rem;
-    }
-
-    .diffview-rule code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      color: var(--accent-light);
-    }
-
-    .diffview-rule-count { color: var(--text-muted); }
-
-    .diffview-rule-toggle {
-      background: transparent;
-      color: var(--accent-light);
-      border: 1px solid var(--border);
-      border-radius: 999px;
-      padding: 2px 8px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .diffview-rule-toggle:hover,
-    .diffview-rule-toggle:focus-visible {
-      border-color: var(--accent);
-      color: var(--text);
-    }
-
-    .diffview-text {
-      margin-top: 12px;
-      font-size: 0.88rem;
-      line-height: 1.9;
-      white-space: pre-wrap;
-      word-break: break-word;
-    }
-
-    .diff-change {
-      display: inline;
-    }
-
-    .diff-del {
-      color: var(--red);
-      background: rgba(255,107,107,0.1);
-      text-decoration: line-through;
-      border-radius: 3px;
-      padding: 0 2px;
-    }
-
-    .diff-del.lossy { background: rgba(255,107,107,0.2); }
-
-    .diff-ins {
-      color: var(--green);
-      background: rgba(76,175,125,0.12);
-      text-decoration: none;
-      border-radius: 3px;
-      padding: 0 2px;
-    }
-
-    .diff-undone {
-      background: rgba(165,180,252,0.18);
-      color: var(--text);
-      border-radius: 3px;
-      padding: 0 2px;
-    }
-
-    .diff-blocked {
-      background: rgba(255,107,107,0.08);
-      border: 1px dashed rgba(255,107,107,0.4);
-      border-radius: 3px;
-      padding: 0 2px;
-    }
-
-    .diff-toggle {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 18px; height: 18px;
-      margin: 0 1px;
-      background: transparent;
-      color: var(--text-muted);
-      border: 1px solid var(--border);
-      border-radius: 4px;
-      font-size: 0.7rem;
-      line-height: 1;
-      cursor: pointer;
-      vertical-align: middle;
-    }
-
-    .diff-toggle:hover,
-    .diff-toggle:focus-visible {
-      color: var(--text);
-      border-color: var(--accent);
-    }
-
-    /* COST ADVISOR */
-    .advisor {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 20px;
-    }
-
-    .advisor-header {
-      display: flex;
-      align-items: baseline;
-      flex-wrap: wrap;
-      gap: 10px;
-      padding-bottom: 10px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .advisor-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-right: auto;
-    }
-
-    .advisor-sub {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-    }
-
-    .advisor-verdict {
-      margin: 14px 0 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      line-height: 1.5;
-      padding-left: 12px;
-      border-left: 3px solid var(--accent);
-    }
-
-    .advisor-verdict.cache { border-left-color: var(--green); }
-    .advisor-verdict.as-is { border-left-color: var(--text-muted); }
-
-    .advisor-reasons {
-      list-style: none;
-      margin: 0 0 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      font-size: 0.8rem;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }
-
-    .advisor-reasons li::before {
-      content: "· ";
-      color: var(--accent-light);
-    }
-
-    .advisor-scroll {
-      overflow-x: auto;
-      margin-top: 4px;
-    }
-
-    .advisor-table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.82rem;
-    }
-
-    .advisor-table th,
-    .advisor-table td {
-      padding: 8px 10px;
-      text-align: right;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    .advisor-table thead th {
-      font-size: 0.72rem;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--text-muted);
-      font-weight: 700;
-    }
-
-    .advisor-table th[scope="row"],
-    .advisor-table thead th:first-child {
-      text-align: left;
-      font-weight: 600;
-      white-space: normal;
-    }
-
-    .advisor-table tr.best th[scope="row"],
-    .advisor-table tr.best td {
-      background: rgba(76,175,125,0.08);
-    }
-
-    .advisor-table td.good { color: var(--green); font-weight: 700; }
-
-    .advisor-pick {
-      display: inline-block;
-      margin-left: 8px;
-      font-size: 0.66rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: var(--green);
-      border: 1px solid rgba(76,175,125,0.5);
-      border-radius: 999px;
-      padding: 1px 7px;
-    }
-
-    .advisor-note {
-      font-size: 0.78rem;
-      color: var(--text-muted);
-      margin: 12px 0 0;
-      line-height: 1.55;
-    }
-
-    .advisor-group { margin-top: 16px; }
-
-    .advisor-group-title {
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-    }
-
-    .advisor-group-count {
-      font-weight: 400;
-      text-transform: none;
-      color: var(--red);
-    }
-
-    .advisor-list {
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .advisor-list li {
-      display: flex;
-      gap: 8px;
-      align-items: flex-start;
-      font-size: 0.8rem;
-      background: var(--surface2);
-      border-radius: 6px;
-      padding: 7px 10px;
-    }
-
-    .advisor-mark { color: var(--red); flex: 0 0 auto; }
-
-    .advisor-list code {
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.78rem;
-      color: var(--accent-light);
-    }
-
-    .advisor-why {
-      display: block;
-      color: var(--text-muted);
-      font-style: normal;
-      font-size: 0.76rem;
-      margin-top: 2px;
-    }
-
-    .advisor-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .advisor-output {
-      width: 100%;
-      margin-top: 10px;
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      color: var(--text);
-      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-      font-size: 0.8rem;
-      line-height: 1.5;
-      padding: 12px;
-      resize: vertical;
-    }
-
-    /* FOOTER */
-    footer {
-      text-align: center;
-      padding: 40px 24px;
-      color: var(--text-muted);
-      font-size: 0.85rem;
-      border-top: 1px solid var(--border);
-      margin-top: 60px;
-    }
-
-    footer a { color: var(--accent-light); text-decoration: none; }
-
-    /* Copy success */
-    .copy-success {
-      position: fixed;
-      bottom: 24px;
-      right: 24px;
-      background: var(--green);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 8px;
-      font-size: 0.9rem;
-      font-weight: 600;
-      opacity: 0;
-      transform: translateY(10px);
-      transition: all 0.3s;
-      pointer-events: none;
-    }
-
-    .copy-success.show {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  </style>
+  <link rel="stylesheet" href="/src/styles/landing.css" />
 </head>
 
 <body>
@@ -1348,24 +85,26 @@
     </a>
     <div class="header-actions">
       <span class="badge">Free · No signup</span>
+      <a class="lang-link" href="/promptrim/es/" hreflang="es" lang="es">ES</a>
     </div>
   </header>
 
   <section class="hero">
-    <h1>Compress AI Prompts.<br/>Cut Token Costs.</h1>
-    <p>Paste any prompt, get a leaner version that preserves all the meaning. Works with ChatGPT, Claude, Gemini, and any LLM.</p>
+    <h1>The prompt compressor<br/>that proves it didn't break your prompt.</h1>
+    <p>Code, quoted strings, URLs and template variables are never touched — by construction, not by luck. Every compression comes with a checklist showing exactly which instructions survived. Works with ChatGPT, Claude, Gemini, and any LLM.</p>
     <div class="hero-actions">
+      <a class="hero-link" href="#benchmark">📊 See the real numbers</a>
       <a class="hero-link" href="https://github.com/FabianIMV/promptrim/stargazers" target="_blank" rel="noopener noreferrer">🌟 Support the project</a>
       <a class="hero-link" href="https://github.com/FabianIMV/promptrim" target="_blank" rel="noopener noreferrer">💻 View source code</a>
     </div>
     <div class="stats">
       <div class="stat">
-        <div class="stat-num">Free</div>
-        <div class="stat-label">no signup needed</div>
+        <div class="stat-num">0 backend</div>
+        <div class="stat-label">Fast mode never leaves your browser</div>
       </div>
       <div class="stat">
-        <div class="stat-num">AI</div>
-        <div class="stat-label">powered compression</div>
+        <div class="stat-num">Verified</div>
+        <div class="stat-label">constraint checklist, not a promise</div>
       </div>
     </div>
   </section>
@@ -1400,6 +139,74 @@
         <div class="step-icon">🔒</div>
         <h3>100% Private</h3>
         <p>Your prompts never touch our servers. API keys are used only in your current browser session and never sent to our servers.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benchmark -->
+  <section class="how" id="benchmark">
+    <h2>The real numbers</h2>
+    <p class="how-sub">No invented percentages. Generated by <code>npm run bench</code> against 40 real prompts in <code>bench/corpus/</code>, re-run before every release.</p>
+    <div class="bench-table">
+      <!-- BENCHMARK:LANDING:START -->
+<p class="advisor-sub">Generated by <code>npm run bench</code> on 2026-09-04. Tokens counted with the real o200k tokenizer (js-tiktoken) — never estimated. The ledger is enforced at every level here (the product default only enforces it at Aggressive) so blocked changes are visible at all three.</p>
+<h3>Production-style system prompts (40 prompts)</h3>
+<p class="advisor-sub">bench/corpus/phase0 + bench/corpus/phase2 — regression fixtures written to be already careful. A near-zero reduction here is the expected result: nothing gets invented to cut.</p>
+<div class="advisor-scroll"><table class="advisor-table">
+<thead><tr><th scope="col">Level</th><th scope="col">Avg. token reduction</th><th scope="col">Aggregate token reduction</th><th scope="col">Critical constraints preserved</th><th scope="col">Changes blocked by the ledger</th></tr></thead>
+<tbody>
+<tr><th scope="row">Light</th><td>0.0%</td><td>0.0% (4,523 → 4,523)</td><td>100.0% (434/434)</td><td>0</td></tr>
+<tr><th scope="row">Balanced</th><td>1.4%</td><td>0.7% (4,523 → 4,491)</td><td>100.0% (434/434)</td><td>0</td></tr>
+<tr><th scope="row">Aggressive</th><td>1.6%</td><td>0.9% (4,523 → 4,484)</td><td>100.0% (434/434)</td><td>0</td></tr>
+</tbody></table></div>
+<h3>Everyday chat-style prompts (10 prompts)</h3>
+<p class="advisor-sub">bench/corpus/phase6 — unengineered requests padded with the framing and hedges people type without thinking about it.</p>
+<div class="advisor-scroll"><table class="advisor-table">
+<thead><tr><th scope="col">Level</th><th scope="col">Avg. token reduction</th><th scope="col">Aggregate token reduction</th><th scope="col">Critical constraints preserved</th><th scope="col">Changes blocked by the ledger</th></tr></thead>
+<tbody>
+<tr><th scope="row">Light</th><td>0.0%</td><td>0.0% (2,426 → 2,426)</td><td>100.0% (60/60)</td><td>0</td></tr>
+<tr><th scope="row">Balanced</th><td>9.0%</td><td>8.9% (2,426 → 2,209)</td><td>100.0% (60/60)</td><td>0</td></tr>
+<tr><th scope="row">Aggressive</th><td>12.3%</td><td>12.2% (2,426 → 2,129)</td><td>100.0% (60/60)</td><td>0</td></tr>
+</tbody></table></div>
+<p class="advisor-sub">AI mode not measured for: Anthropic, OpenAI, Google Gemini. No percentage is published for a provider that was not actually called.</p>
+<!-- BENCHMARK:LANDING:END -->
+    </div>
+  </section>
+
+  <!-- What PromptTrim does NOT do -->
+  <section class="how" id="not">
+    <h2>What PromptTrim does NOT do</h2>
+    <p class="how-sub">Honesty as a feature, not a disclaimer. Every point below is a real, current limit of this exact codebase.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not touch protected regions</h3>
+        <p>Code fences, inline code, quoted strings, URLs, template variables and few-shot examples are structurally excluded from every rule — not "usually skipped," never even offered to a rule as a candidate.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not delete instruction words</h3>
+        <p>"never", "always", "must", "only", "step by step" and anything like them are never removed, at any level. <code>src/core/rules/discarded.ts</code> lists every rule from the old app that did this, and why it was cut.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not prove full meaning is preserved</h3>
+        <p>The ledger verifies that specific constraints (prohibitions, formats, numbers, quoted literals, variables) survive — not that the compressed prompt reads identically to a human. Review Aggressive output before shipping it.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not send Fast mode prompts anywhere</h3>
+        <p>There is no backend. Fast mode compresses in your browser tab and nothing leaves it. AI mode goes straight from your browser to the provider you pick, with your own key — never through a PromptTrim server, because none exists.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not check requirements in every language yet</h3>
+        <p>The constraint ledger's prohibition/requirement/format detection is English-only today. A prompt in Spanish or another language still gets the protected-region safety net, but not that checklist — this is tracked, not hidden.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not run batch prompts through AI mode</h3>
+        <p>Batch mode (several prompts separated by <code>---</code>) is Fast mode only. Firing an unbounded number of paid API calls from one click is not a default anyone should get by accident.</p>
       </div>
     </div>
   </section>
@@ -1446,7 +253,7 @@
     </div>
     <div class="faq-item">
       <div class="faq-q">How much can I save?</div>
-      <div class="faq-a">Fast Mode typically saves 20-40%. AI Mode saves 40-70% on verbose prompts. Savings depend on how wordy the original prompt is — instructions with lots of filler compress the most.</div>
+      <div class="faq-a">It depends entirely on how much filler the prompt already has — see the <a href="#benchmark">real numbers</a> above, generated by <code>npm run bench</code>. An already-careful system prompt barely shrinks in Fast Mode, and that's correct: there's nothing safe left to cut. A verbose, unedited prompt full of "please", "in order to" and framing typically compresses noticeably more. AI Mode isn't benchmarked with real providers yet (see the note above the tables); no percentage is published for it until it is.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Is compressing always the right move?</div>
@@ -1459,6 +266,10 @@
     <div class="faq-item">
       <div class="faq-q">How is the token count calculated?</div>
       <div class="faq-a">It depends on the target model you pick. For OpenAI models we run the real o200k tokenizer in your browser, so the count is exact. For Gemini, entering your API key gets you an exact count from Google's own countTokens endpoint; without a key it falls back to an estimate, same as Claude, which has no public browser-side tokenizer.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">How do I know it didn't lose anything?</div>
+      <div class="faq-a">You don't have to take the app's word for it — check the checklist. Before compressing, PromptTrim extracts every prohibition, requirement, output format, number and quoted literal from your prompt. After compressing, it verifies each one against the result and shows a ✓ or ✗ per item, with a <strong>Restore</strong> button next to anything lost. That verification always runs locally in your browser, even in AI mode, where it has the final say over what the model itself reports.</div>
     </div>
   </section>
 

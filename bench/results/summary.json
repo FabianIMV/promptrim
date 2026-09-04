@@ -1,0 +1,129 @@
+{
+  "generatedAt": "2026-09-04",
+  "groups": [
+    {
+      "id": "production",
+      "title": "Production-style system prompts",
+      "corpusSize": 40,
+      "fast": [
+        {
+          "level": "light",
+          "prompts": 40,
+          "tokensBefore": 4523,
+          "tokensAfter": 4523,
+          "avgReductionPct": 0,
+          "aggregateReductionPct": 0,
+          "criticalTotal": 434,
+          "criticalKept": 434,
+          "criticalPreservedPct": 100,
+          "blockedChanges": 0,
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 124,
+          "protectedRegionViolations": 0
+        },
+        {
+          "level": "balanced",
+          "prompts": 40,
+          "tokensBefore": 4523,
+          "tokensAfter": 4491,
+          "avgReductionPct": 1.3966082607596653,
+          "aggregateReductionPct": 0.7074950254256025,
+          "criticalTotal": 434,
+          "criticalKept": 434,
+          "criticalPreservedPct": 100,
+          "blockedChanges": 0,
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 124,
+          "protectedRegionViolations": 0
+        },
+        {
+          "level": "aggressive",
+          "prompts": 40,
+          "tokensBefore": 4523,
+          "tokensAfter": 4484,
+          "avgReductionPct": 1.598578465395115,
+          "aggregateReductionPct": 0.862259562237453,
+          "criticalTotal": 434,
+          "criticalKept": 434,
+          "criticalPreservedPct": 100,
+          "blockedChanges": 0,
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 124,
+          "protectedRegionViolations": 0
+        }
+      ]
+    },
+    {
+      "id": "everyday",
+      "title": "Everyday chat-style prompts",
+      "corpusSize": 10,
+      "fast": [
+        {
+          "level": "light",
+          "prompts": 10,
+          "tokensBefore": 2426,
+          "tokensAfter": 2426,
+          "avgReductionPct": 0,
+          "aggregateReductionPct": 0,
+          "criticalTotal": 60,
+          "criticalKept": 60,
+          "criticalPreservedPct": 100,
+          "blockedChanges": 0,
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 18,
+          "protectedRegionViolations": 0
+        },
+        {
+          "level": "balanced",
+          "prompts": 10,
+          "tokensBefore": 2426,
+          "tokensAfter": 2209,
+          "avgReductionPct": 8.956577831785781,
+          "aggregateReductionPct": 8.944765045342127,
+          "criticalTotal": 60,
+          "criticalKept": 60,
+          "criticalPreservedPct": 100,
+          "blockedChanges": 0,
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 18,
+          "protectedRegionViolations": 0
+        },
+        {
+          "level": "aggressive",
+          "prompts": 10,
+          "tokensBefore": 2426,
+          "tokensAfter": 2129,
+          "avgReductionPct": 12.2676539946835,
+          "aggregateReductionPct": 12.24237427864798,
+          "criticalTotal": 60,
+          "criticalKept": 60,
+          "criticalPreservedPct": 100,
+          "blockedChanges": 0,
+          "promptsWithBlockedChanges": 0,
+          "protectedRegions": 18,
+          "protectedRegionViolations": 0
+        }
+      ]
+    }
+  ],
+  "ai": {
+    "measured": [],
+    "skipped": [
+      {
+        "provider": "anthropic",
+        "label": "Anthropic",
+        "reason": "ANTHROPIC_API_KEY not set"
+      },
+      {
+        "provider": "openai",
+        "label": "OpenAI",
+        "reason": "OPENAI_API_KEY not set"
+      },
+      {
+        "provider": "gemini",
+        "label": "Google Gemini",
+        "reason": "GEMINI_API_KEY not set"
+      }
+    ]
+  }
+}

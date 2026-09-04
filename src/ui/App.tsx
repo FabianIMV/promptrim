@@ -2,21 +2,30 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import {
   adviseCost,
   allModels,
+  batchPreview,
   buildCacheReady,
+  buildExportContent,
   buildLedger,
   changeKey,
   compress,
   costForTokens,
   countTokensForModel,
+  decodeShareState,
   defaultIntervalSeconds,
+  encodeShareState,
+  exportFileName,
+  exportMimeType,
   extractConstraints,
   getModel,
+  isCritical,
   LEVELS,
+  parseImportedFile,
   projectDiff,
   projectedMonthlyCost,
   recommend,
   restoreConstraint,
   scaleCompressedTokens,
+  splitBatch,
   splitPrompt,
 } from '../core';
 import type {
@@ -31,6 +40,7 @@ import type {
   PromptSplit,
   Recommendation,
   TokenCountResult,
+  TransferFormat,
 } from '../core';
 import {
   DEFAULT_PROVIDER_ID,
@@ -46,6 +56,8 @@ import {
 } from '../providers';
 import type { AiCostEstimate, AiStep, AiVerdict, ProviderId } from '../providers';
 import { AiPanel } from './AiPanel';
+import { BatchView } from './BatchView';
+import type { BatchRow } from './BatchView';
 import { CostAdvisor } from './CostAdvisor';
 import { DiffView } from './DiffView';
 import { LedgerPanel } from './LedgerPanel';
@@ -135,7 +147,8 @@ export function App() {
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [savings, setSavings] = useState<Savings | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const [exportFormat, setExportFormat] = useState<TransferFormat>('txt');
   const [targetModelId, setTargetModelId] = useState(DEFAULT_MODEL_ID);
   const [callsPerDay, setCallsPerDay] = useState(DEFAULT_CALLS_PER_DAY);
   const [inTokenResult, setInTokenResult] = useState<TokenCountResult>(NO_TOKENS);
@@ -143,6 +156,7 @@ export function App() {
   const [ledger, setLedger] = useState<Ledger | null>(null);
   const [blocked, setBlocked] = useState<BlockedChange[]>([]);
   const [run, setRun] = useState<Run | null>(null);
+  const [batchRows, setBatchRows] = useState<BatchRow[] | null>(null);
   const [disabledChangeKeys, setDisabledChangeKeys] = useState<Set<string>>(new Set());
   const [disabledRuleIds, setDisabledRuleIds] = useState<Set<string>>(new Set());
   const [callGap, setCallGap] = useState<CallGapId>('auto');
@@ -153,6 +167,8 @@ export function App() {
   } | null>(null);
   const [cacheReady, setCacheReady] = useState<CacheReadyResult | null>(null);
   const apiKeyRef = useRef<HTMLInputElement | null>(null);
+  const importInputRef = useRef<HTMLInputElement | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const provider = getProvider(providerId) ?? PROVIDERS[0]!;
   const apiKey = apiKeys[providerId] ?? '';
@@ -162,6 +178,12 @@ export function App() {
    * target model's own provider — never a key for a different vendor.
    */
   const countingKey = apiKeys[targetModel.provider as ProviderId] || undefined;
+
+  const showToast = useCallback((message: string) => {
+    setToast(message);
+    if (toastTimer.current !== null) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(null), 2000);
+  }, []);
 
   useEffect(() => {
     try {
@@ -176,6 +198,14 @@ export function App() {
     if (isRemembering()) {
       setRemember(true);
       setApiKeys(loadKeys());
+    }
+    // A shared link (#s=...) carries only { input, level } — never a key, see
+    // src/core/share.ts. Loading it only fills the editor; it never triggers a
+    // compression or an AI-mode call on its own.
+    const shared = decodeShareState(window.location.hash);
+    if (shared) {
+      setInput(shared.input);
+      setLevel(shared.level);
     }
   }, []);
 
@@ -309,9 +339,8 @@ export function App() {
     } catch {
       return;
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [cacheReady]);
+    showToast('✓ Copied to clipboard!');
+  }, [cacheReady, showToast]);
 
   const onToggleAi = useCallback((next: boolean) => {
     setAiMode(next);
@@ -355,6 +384,7 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setBatchRows(null);
     setAiSteps(null);
     setAiOutcome(null);
     setCacheReady(null);
@@ -464,6 +494,69 @@ export function App() {
       return;
     }
 
+    const batchPrompts = splitBatch(text);
+    if (batchPrompts.length > 1) {
+      if (aiMode) {
+        setError(
+          'Batch mode runs in Fast mode only — uncheck "AI mode" to compress several prompts at once.',
+        );
+        return;
+      }
+
+      setError('');
+      setSavings(null);
+      setOutput('');
+      setLedger(null);
+      setBlocked([]);
+      setRun(null);
+      setAiOutcome(null);
+      setCacheReady(null);
+      setDisabledChangeKeys(new Set());
+      setBusy(true);
+
+      try {
+        const rows: BatchRow[] = [];
+        const outputs: string[] = [];
+        for (const [i, prompt] of batchPrompts.entries()) {
+          const compressed = compress(prompt, level, { disabledRuleIds: [...disabledRuleIds] });
+          const promptLedger = buildLedger(
+            prompt,
+            compressed.output,
+            compressed.constraints ? { constraints: compressed.constraints } : {},
+          );
+          const critical = promptLedger.report.checks.filter((c) => isCritical(c.constraint.type));
+          const [before, after] = await Promise.all([
+            countTokensForModel(prompt, targetModel, countingKey),
+            countTokensForModel(compressed.output, targetModel, countingKey),
+          ]);
+          rows.push({
+            index: i + 1,
+            preview: batchPreview(prompt),
+            tokensBefore: before.tokens,
+            tokensAfter: after.tokens,
+            pct:
+              before.tokens > 0
+                ? Math.round(((before.tokens - after.tokens) / before.tokens) * 100)
+                : 0,
+            criticalKept: critical.filter((c) => c.preserved).length,
+            criticalTotal: critical.length,
+            blocked: compressed.blocked.length,
+          });
+          outputs.push(compressed.output);
+        }
+        const joined = outputs.join('\n\n---\n\n');
+        setOutput(joined);
+        setBatchRows(rows);
+        await refreshSavings(text, joined);
+      } catch (err) {
+        setError(`Error: ${(err as Error).message}`);
+      } finally {
+        setBusy(false);
+      }
+      return;
+    }
+    setBatchRows(null);
+
     setError('');
     setSavings(null);
     setOutput('');
@@ -546,7 +639,28 @@ export function App() {
     level,
     refreshSavings,
     disabledRuleIds,
+    targetModel,
+    countingKey,
   ]);
+
+  // Ctrl+Enter (⌘+Enter on macOS) compresses from anywhere on the page,
+  // including while typing in the textarea — the shortcut a chat/code editor
+  // user already expects for "send/run". The listener is attached once and
+  // reads `onCompress` through a ref rather than depending on it directly, so
+  // it does not detach and reattach on every keystroke (`onCompress` gets a
+  // new identity whenever `input` changes).
+  const onCompressRef = useRef(onCompress);
+  onCompressRef.current = onCompress;
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        void onCompressRef.current();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
 
   const onCopy = useCallback(async () => {
     if (!output) return;
@@ -555,9 +669,8 @@ export function App() {
     } catch {
       return;
     }
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }, [output]);
+    showToast('✓ Copied to clipboard!');
+  }, [output, showToast]);
 
   const onClear = useCallback(() => {
     setInput('');
@@ -567,11 +680,56 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setBatchRows(null);
     setAiSteps(null);
     setAiOutcome(null);
     setCacheReady(null);
     setDisabledChangeKeys(new Set());
   }, []);
+
+  const onShare = useCallback(async () => {
+    if (!input.trim()) return;
+    const hash = encodeShareState({ input, level });
+    const url = `${window.location.origin}${window.location.pathname}${hash}`;
+    // Keep the address bar in sync too, so reloading — or bookmarking without
+    // hitting Share again — reproduces the same prompt and level.
+    window.history.replaceState(null, '', hash);
+    try {
+      await navigator.clipboard.writeText(url);
+      showToast('✓ Link copied!');
+    } catch {
+      showToast('Link ready in the address bar — copy failed.');
+    }
+  }, [input, level, showToast]);
+
+  const onImportFile = useCallback(
+    async (e: Event) => {
+      // `e.currentTarget` is only valid for the synchronous part of the
+      // handler; it reads back `null` after the `await` below, so the input
+      // element is captured up front.
+      const inputEl = e.currentTarget as HTMLInputElement;
+      const file = inputEl.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      onInput(parseImportedFile(file.name, text));
+      showToast(`✓ Imported ${file.name}`);
+      inputEl.value = '';
+    },
+    [onInput, showToast],
+  );
+
+  const onExport = useCallback(() => {
+    if (!input.trim()) return;
+    const content = buildExportContent(exportFormat, { input, output, level });
+    const blob = new Blob([content], { type: exportMimeType(exportFormat) });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = exportFileName(exportFormat);
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast(`✓ Exported ${exportFileName(exportFormat)}`);
+  }, [input, output, level, exportFormat, showToast]);
 
   return (
     <>
@@ -714,6 +872,8 @@ export function App() {
         )}
       </div>
 
+      {batchRows && <BatchView rows={batchRows} />}
+
       {advisor && (
         <CostAdvisor
           advice={advisor.advice}
@@ -756,7 +916,7 @@ export function App() {
           </div>
           <textarea
             aria-label="Original prompt"
-            placeholder="Paste your AI prompt here — system prompts, user messages, context, instructions...&#10;&#10;Example: 'I would like you to please write me a comprehensive, detailed and extensive blog post about artificial intelligence. The post should be very thorough and cover all the important aspects...'"
+            placeholder="Paste your AI prompt here — system prompts, user messages, context, instructions...&#10;&#10;Example: 'I would like you to please write me a comprehensive, detailed and extensive blog post about artificial intelligence. The post should be very thorough and cover all the important aspects...'&#10;&#10;Tip: paste several prompts separated by a line with just --- to compress them all at once in Fast mode."
             value={input}
             onInput={(e) => onInput((e.currentTarget as HTMLTextAreaElement).value)}
           />
@@ -780,7 +940,13 @@ export function App() {
       </div>
 
       <div class="actions">
-        <button class="btn btn-primary" type="button" disabled={busy} onClick={onCompress}>
+        <button
+          class="btn btn-primary"
+          type="button"
+          disabled={busy}
+          onClick={onCompress}
+          title="Ctrl+Enter (⌘+Enter on Mac)"
+        >
           {busy ? (
             <>
               <span class="spinner" /> Compressing…
@@ -794,6 +960,48 @@ export function App() {
         <button class="btn btn-ghost" type="button" onClick={onCopy}>
           📋 Copy Result
         </button>
+        <button
+          class="btn btn-ghost"
+          type="button"
+          onClick={onShare}
+          disabled={!input.trim()}
+          title="Copy a link that reproduces this prompt and level — never your API key"
+        >
+          🔗 Share
+        </button>
+        <button class="btn btn-ghost" type="button" onClick={() => importInputRef.current?.click()}>
+          📥 Import
+        </button>
+        <input
+          ref={importInputRef}
+          type="file"
+          accept=".txt,.md,.json"
+          class="sr-only"
+          aria-label="Import a prompt from a .txt, .md or .json file"
+          onChange={onImportFile}
+        />
+        <span class="export-group">
+          <button
+            class="btn btn-ghost export-btn"
+            type="button"
+            onClick={onExport}
+            disabled={!input.trim()}
+          >
+            📤 Export
+          </button>
+          <select
+            class="export-format"
+            aria-label="Export file format"
+            value={exportFormat}
+            onChange={(e) =>
+              setExportFormat((e.currentTarget as HTMLSelectElement).value as TransferFormat)
+            }
+          >
+            <option value="txt">.txt</option>
+            <option value="md">.md</option>
+            <option value="json">.json</option>
+          </select>
+        </span>
         <button class="btn btn-ghost" type="button" onClick={onClear}>
           🗑️ Clear
         </button>
@@ -803,7 +1011,7 @@ export function App() {
         {error}
       </div>
 
-      <div class={`copy-success${copied ? ' show' : ''}`}>✓ Copied to clipboard!</div>
+      <div class={`copy-success${toast ? ' show' : ''}`}>{toast}</div>
     </>
   );
 }

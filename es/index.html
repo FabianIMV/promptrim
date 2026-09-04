@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- Primary SEO -->
+    <title>PromptTrim – El compresor de prompts que demuestra que no rompió tu prompt</title>
+    <meta
+      name="description"
+      content="Comprime prompts de ChatGPT, Claude y Gemini en tu navegador. El código, las cadenas de texto y las variables nunca se tocan, y un checklist de restricciones demuestra que nada más se perdió. Benchmark real y reproducible — gratis, sin registro."
+    />
+    <meta
+      name="keywords"
+      content="compresor de prompts, reducir tokens, optimizador de prompts IA, ahorrar tokens, reducir costos IA, compresor de prompts ChatGPT, optimizador de prompts Claude, herramienta de compresión de prompts"
+    />
+    <meta name="author" content="PromptTrim" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="canonical" href="https://fabianimv.github.io/promptrim/es/" />
+
+    <!-- PWA: modo rápido sin conexión -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="theme-color" content="#0f1117" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://fabianimv.github.io/promptrim/es/" />
+    <meta
+      property="og:title"
+      content="PromptTrim – El compresor de prompts que demuestra que no rompió tu prompt"
+    />
+    <meta
+      property="og:description"
+      content="El código, las cadenas de texto y las variables nunca se tocan. Un checklist de restricciones demuestra que nada más se perdió. Funciona con ChatGPT, Claude, Gemini y cualquier LLM. Gratis, sin registro."
+    />
+    <meta property="og:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
+    <meta property="og:locale" content="es_ES" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="PromptTrim – El compresor de prompts que demuestra que no rompió tu prompt"
+    />
+    <meta
+      name="twitter:description"
+      content="El código, las cadenas de texto y las variables nunca se tocan. Un checklist de restricciones demuestra que nada más se perdió. Gratis, para usuarios de ChatGPT, Claude y Gemini."
+    />
+    <meta name="twitter:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
+
+    <!-- Geo targeting -->
+    <meta name="geo.region" content="CL" />
+    <meta name="geo.placename" content="Santiago, Chile" />
+    <meta name="language" content="es" />
+
+    <!-- Idiomas alternativos -->
+    <link rel="alternate" hreflang="en" href="https://fabianimv.github.io/promptrim/" />
+    <link rel="alternate" hreflang="es" href="https://fabianimv.github.io/promptrim/es/" />
+    <link rel="alternate" hreflang="x-default" href="https://fabianimv.github.io/promptrim/" />
+
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "PromptTrim",
+        "url": "https://fabianimv.github.io/promptrim/es/",
+        "description": "Compresor de prompts de IA gratuito para ChatGPT, Claude y Gemini. Las regiones protegidas y el libro de restricciones demuestran que las instrucciones, el código y las variables sobreviven a la compresión — verificado con un benchmark público y reproducible.",
+        "applicationCategory": "UtilityApplication",
+        "operatingSystem": "Any",
+        "offers": {
+          "@type": "Offer",
+          "price": "0",
+          "priceCurrency": "USD"
+        },
+        "featureList": [
+          "Compresión basada en reglas con protección de código, cadenas, URLs y variables",
+          "Libro de restricciones con checklist verificable y restauración de un clic",
+          "Reescritura con IA, verificada de forma independiente y con reparación automática",
+          "Conteo exacto de tokens por proveedor",
+          "Cost Advisor: comprimir vs. cachear",
+          "Compartir un prompt por URL, o importar/exportar como .txt, .md o .json",
+          "Compresión por lotes de varios prompts a la vez",
+          "Modo rápido con soporte sin conexión (PWA)",
+          "Funciona con cualquier LLM"
+        ],
+        "screenshot": "https://fabianimv.github.io/promptrim/og-image.png",
+        "inLanguage": "es"
+      }
+    </script>
+
+    <link rel="stylesheet" href="/src/styles/landing.css" />
+  </head>
+
+  <body>
+    <header>
+      <a href="/promptrim/es/" class="logo">
+        <div class="logo-icon">✂️</div>
+        PromptTrim
+      </a>
+      <div class="header-actions">
+        <span class="badge">Gratis · Sin registro</span>
+        <a class="lang-link" href="/promptrim/" hreflang="en" lang="en">EN</a>
+      </div>
+    </header>
+
+    <section class="hero">
+      <h1>El compresor de prompts<br />que demuestra que no rompió tu prompt.</h1>
+      <p>
+        El código, las cadenas de texto entre comillas, las URLs y las variables de plantilla
+        nunca se tocan — por construcción, no por suerte. Cada compresión viene con un checklist
+        que muestra exactamente qué instrucciones sobrevivieron. Funciona con ChatGPT, Claude,
+        Gemini y cualquier LLM.
+      </p>
+      <div class="hero-actions">
+        <a class="hero-link" href="#benchmark">📊 Ver los números reales</a>
+        <a
+          class="hero-link"
+          href="https://github.com/FabianIMV/promptrim/stargazers"
+          target="_blank"
+          rel="noopener noreferrer"
+          >🌟 Apoya el proyecto</a
+        >
+        <a
+          class="hero-link"
+          href="https://github.com/FabianIMV/promptrim"
+          target="_blank"
+          rel="noopener noreferrer"
+          >💻 Ver el código fuente</a
+        >
+      </div>
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-num">0 servidor</div>
+          <div class="stat-label">el modo rápido nunca sale de tu navegador</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">Verificado</div>
+          <div class="stat-label">checklist de restricciones, no una promesa</div>
+        </div>
+      </div>
+    </section>
+
+    <main class="app" id="app">
+      <noscript>
+        PromptTrim se ejecuta enteramente en tu navegador y necesita JavaScript habilitado para
+        comprimir prompts.
+      </noscript>
+    </main>
+
+    <!-- Cómo funciona -->
+    <section class="how">
+      <h2>Cómo funciona PromptTrim</h2>
+      <p class="how-sub">Dos modos de compresión según lo que necesites</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon">⚡</div>
+          <h3>Modo rápido (gratis)</h3>
+          <p>
+            Compresión basada en reglas. Elimina muletillas, frases redundantes y patrones
+            verbosos al instante — sin necesidad de clave de API.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🤖</div>
+          <h3>Modo IA (Anthropic · OpenAI · Gemini)</h3>
+          <p>
+            Tu modelo reescribe el prompt, un segundo modelo audita el resultado contra cada
+            restricción, y lo que se pierde se repara automáticamente. Usa tu propia clave.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">📊</div>
+          <h3>Análisis de tokens</h3>
+          <p>
+            Ve el conteo exacto de tokens antes y después, y lo que cuesta cada llamada — incluida
+            la propia llamada de compresión, con su precio mostrado antes de ejecutarla.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🔒</div>
+          <h3>100% privado</h3>
+          <p>
+            Tus prompts nunca tocan nuestros servidores — porque no existen. Las claves de API se
+            usan solo en tu sesión de navegador actual y nunca se nos envían.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Benchmark -->
+    <section class="how" id="benchmark">
+      <h2>Los números reales</h2>
+      <p class="how-sub">
+        Ningún porcentaje inventado. Generado por <code>npm run bench</code> sobre 40 prompts
+        reales en <code>bench/corpus/</code>, antes de cada release.
+      </p>
+      <div class="bench-table">
+        <!-- BENCHMARK:LANDING:START -->
+<p class="advisor-sub">Generado por <code>npm run bench</code> el 2026-09-04. Tokens contados con el tokenizador real o200k (js-tiktoken) — nunca estimados. El libro de restricciones se aplica en todos los niveles aquí (el valor por defecto del producto solo lo aplica en Aggressive), así que los cambios bloqueados son visibles en los tres.</p>
+<h3>System prompts de estilo producción (40 prompts)</h3>
+<p class="advisor-sub">bench/corpus/phase0 + bench/corpus/phase2 — fixtures de regresión escritos para ser ya cuidadosos. Una reducción casi nula aquí es el resultado esperado: no se inventa nada que recortar.</p>
+<div class="advisor-scroll"><table class="advisor-table">
+<thead><tr><th scope="col">Nivel</th><th scope="col">Reducción media de tokens</th><th scope="col">Reducción agregada de tokens</th><th scope="col">Restricciones críticas preservadas</th><th scope="col">Cambios bloqueados por el libro</th></tr></thead>
+<tbody>
+<tr><th scope="row">Light</th><td>0.0%</td><td>0.0% (4,523 → 4,523)</td><td>100.0% (434/434)</td><td>0</td></tr>
+<tr><th scope="row">Balanced</th><td>1.4%</td><td>0.7% (4,523 → 4,491)</td><td>100.0% (434/434)</td><td>0</td></tr>
+<tr><th scope="row">Aggressive</th><td>1.6%</td><td>0.9% (4,523 → 4,484)</td><td>100.0% (434/434)</td><td>0</td></tr>
+</tbody></table></div>
+<h3>Prompts cotidianos de chat (10 prompts)</h3>
+<p class="advisor-sub">bench/corpus/phase6 — peticiones sin diseñar, con los marcos y muletillas que la gente escribe sin pensarlo.</p>
+<div class="advisor-scroll"><table class="advisor-table">
+<thead><tr><th scope="col">Nivel</th><th scope="col">Reducción media de tokens</th><th scope="col">Reducción agregada de tokens</th><th scope="col">Restricciones críticas preservadas</th><th scope="col">Cambios bloqueados por el libro</th></tr></thead>
+<tbody>
+<tr><th scope="row">Light</th><td>0.0%</td><td>0.0% (2,426 → 2,426)</td><td>100.0% (60/60)</td><td>0</td></tr>
+<tr><th scope="row">Balanced</th><td>9.0%</td><td>8.9% (2,426 → 2,209)</td><td>100.0% (60/60)</td><td>0</td></tr>
+<tr><th scope="row">Aggressive</th><td>12.3%</td><td>12.2% (2,426 → 2,129)</td><td>100.0% (60/60)</td><td>0</td></tr>
+</tbody></table></div>
+<p class="advisor-sub">Modo IA no medido para: Anthropic, OpenAI, Google Gemini. No se publica ningún porcentaje para un proveedor que no fue realmente llamado.</p>
+<!-- BENCHMARK:LANDING:END -->
+      </div>
+    </section>
+
+    <!-- Qué NO hace PromptTrim -->
+    <section class="how" id="not">
+      <h2>Qué NO hace PromptTrim</h2>
+      <p class="how-sub">
+        Honestidad como característica, no como descargo de responsabilidad. Cada punto de abajo
+        es una limitación real y actual de este código, tal como está hoy.
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon">🚫</div>
+          <h3>No toca las regiones protegidas</h3>
+          <p>
+            Los bloques de código, el código en línea, las cadenas entre comillas, las URLs, las
+            variables de plantilla y los ejemplos few-shot quedan excluidos de cada regla por
+            construcción — no "normalmente se saltan", ni siquiera se le ofrecen a una regla como
+            candidato.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🚫</div>
+          <h3>No borra palabras de instrucción</h3>
+          <p>
+            "never", "always", "must", "only", "step by step" y cualquier cosa similar nunca se
+            eliminan, en ningún nivel. <code>src/core/rules/discarded.ts</code> enumera cada regla
+            de la app anterior que hacía esto, y por qué se descartó.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🚫</div>
+          <h3>No demuestra que se preservó todo el significado</h3>
+          <p>
+            El libro de restricciones verifica que ciertas restricciones (prohibiciones,
+            formatos, números, literales citados, variables) sobreviven — no que el prompt
+            comprimido se lea idéntico para una persona. Revisa siempre la salida en modo
+            Aggressive antes de usarla en producción.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🚫</div>
+          <h3>No envía los prompts del modo rápido a ningún lado</h3>
+          <p>
+            No hay backend. El modo rápido comprime en tu pestaña del navegador y nada sale de
+            ella. El modo IA va directo de tu navegador al proveedor que elijas, con tu propia
+            clave — nunca a través de un servidor de PromptTrim, porque no existe ninguno.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🚫</div>
+          <h3>Todavía no verifica restricciones en todos los idiomas</h3>
+          <p>
+            La detección de prohibiciones, requisitos y formatos del libro de restricciones es
+            solo en inglés por ahora. Un prompt en español u otro idioma sigue teniendo la
+            protección de regiones protegidas, pero no ese checklist — es una limitación conocida
+            y documentada, no oculta.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🚫</div>
+          <h3>No ejecuta el modo lote con IA</h3>
+          <p>
+            El modo lote (varios prompts separados por <code>---</code>) es solo modo rápido.
+            Disparar un número ilimitado de llamadas de API pagas desde un solo clic no debería
+            pasar por accidente.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comprimir o cachear -->
+    <section class="how" id="compress-vs-cache">
+      <h2>¿Comprimir o cachear?</h2>
+      <p class="how-sub">
+        Comprimir un prompt ahorra 15&ndash;30% una vez. Cachear su prefijo estático ahorra cerca
+        de 90% en cada llamada repetida. PromptTrim te dice cuál vale la pena.
+      </p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-icon">&#9986;&#65039;</div>
+          <h3>Comprimir es un gasto único</h3>
+          <p>
+            Reescribir elimina el relleno y se detiene ahí. Un prompt más corto es más barato en
+            cada llamada, pero el techo es el relleno que tenía el prompt &mdash; típicamente
+            15&ndash;30%, y nada de eso sale del código, JSON o ejemplos que PromptTrim se niega a
+            tocar.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">&#9851;</div>
+          <h3>Cachear se repite</h3>
+          <p>
+            Un acierto de caché cuesta 10% del precio de entrada en Anthropic, OpenAI y Gemini por
+            igual. Escribir la caché cuesta 1.25&times; el precio de entrada para una vida de 5
+            minutos, o 2&times; para una hora &mdash; así que se paga solo desde la 2ª llamada, o
+            la 3ª para la caché de una hora.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">&#9888;&#65039;</div>
+          <h3>Una fecha puede matarla en silencio</h3>
+          <p>
+            Una caché solo coincide con un prefijo idéntico. La fecha de hoy, un id de petición o
+            una variable de plantilla al inicio de un system prompt cambian esos bytes en cada
+            llamada: sin acierto de caché, sin error, precio completo. PromptTrim los encuentra y
+            ofrece moverlos debajo del punto de corte.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">&#128207;</div>
+          <h3>Y los mínimos son reales</h3>
+          <p>
+            Nada más corto que 512 tokens cachea en Claude Opus 5, 1,024 en Sonnet 5, 4,096 en
+            Haiku 4.5, 1,024 en GPT-5.6 en adelante (2,048 antes) y 2,048 en Gemini 2.5. Por debajo
+            de eso, cachear no hace nada &mdash; en silencio.
+          </p>
+        </div>
+      </div>
+      <p class="how-sub">
+        Precios y reglas de caché verificados el 2026-09-03 contra la documentación oficial de
+        <a
+          class="hero-link"
+          href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Anthropic</a
+        >,
+        <a
+          class="hero-link"
+          href="https://developers.openai.com/api/docs/guides/prompt-caching"
+          target="_blank"
+          rel="noopener noreferrer"
+          >OpenAI</a
+        >
+        y
+        <a
+          class="hero-link"
+          href="https://ai.google.dev/gemini-api/docs/generate-content/caching"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Google</a
+        >.
+      </p>
+    </section>
+
+    <!-- FAQ -->
+    <section class="faq">
+      <h2>Preguntas frecuentes</h2>
+      <div class="faq-item">
+        <div class="faq-q">¿Funciona con cualquier modelo de IA?</div>
+        <div class="faq-a">
+          Sí. Los prompts comprimidos funcionan con ChatGPT (GPT-4o, GPT-4.1), Claude (Sonnet,
+          Haiku, Opus), Gemini, Mistral y cualquier LLM. Los tokens se cuentan de forma similar en
+          todos los proveedores principales.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Mis datos son privados?</div>
+        <div class="faq-a">
+          En modo rápido, la compresión ocurre 100% en tu navegador — nada sale de tu equipo. En
+          modo IA, tu prompt se envía directamente desde tu navegador al proveedor que elijas
+          (Anthropic, OpenAI o Google) usando tu propia clave de API. La clave permanece en
+          memoria a menos que marques "Recordar en este navegador", que la guarda en
+          <code>sessionStorage</code> hasta que cierres la pestaña. Nunca vemos tus prompts ni tus
+          claves.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Cuánto puedo ahorrar?</div>
+        <div class="faq-a">
+          Depende por completo de cuánto relleno tenga ya el prompt — mira los
+          <a href="#benchmark">números reales</a> arriba, generados por <code>npm run bench</code>.
+          Un system prompt ya cuidado apenas se reduce en modo rápido, y eso es correcto: no queda
+          nada seguro que recortar. Un prompt verboso y sin editar, lleno de cortesías y marcos de
+          petición, suele comprimirse notablemente más. El modo IA todavía no tiene benchmark con
+          proveedores reales (ver la nota sobre las tablas); no se publica ningún porcentaje para
+          él hasta que lo tenga.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Siempre conviene comprimir?</div>
+        <div class="faq-a">
+          No, y PromptTrim te lo dice. Si el mismo prefijo estático se envía miles de veces al
+          día, cachear el prompt recorta cerca de 90% en cada llamada después de la primera,
+          mientras que comprimir recorta 15-30% una sola vez. El Cost Advisor calcula ambos contra
+          tu propio volumen de llamadas y recomienda el más barato — incluyendo "no comprimas,
+          reordena estas secciones y cachea".
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿La compresión cambia lo que hace la IA?</div>
+        <div class="faq-a">
+          Pueden darse diferencias leves, sobre todo en modo Aggressive. El modo Balanced está
+          diseñado para preservar toda la intención y el contexto del prompt original. Revisa
+          siempre la salida antes de usarla en producción.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Cómo se calcula el conteo de tokens?</div>
+        <div class="faq-a">
+          Depende del modelo objetivo que elijas. Para modelos de OpenAI ejecutamos el
+          tokenizador real o200k en tu navegador, así que el conteo es exacto. Para Gemini, si
+          ingresas tu clave de API obtienes un conteo exacto del endpoint countTokens de Google;
+          sin clave cae a una estimación, igual que Claude, que no tiene un tokenizador público
+          para el navegador.
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Cómo sé que no perdió nada?</div>
+        <div class="faq-a">
+          No tienes que confiar en la promesa: revisa el checklist. Antes de comprimir,
+          PromptTrim extrae cada prohibición, requisito, formato de salida, número y literal
+          citado de tu prompt. Después de comprimir, verifica cada uno contra el resultado y te
+          muestra un ✓ o un ✗ — con un botón de <strong>Restaurar</strong> junto a cualquier cosa
+          que se haya perdido. Esa verificación corre siempre en tu navegador, incluso en modo IA,
+          donde además decide el resultado final por encima de lo que diga el modelo.
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>
+        PromptTrim &copy; 2026 ·
+        <a href="https://github.com/FabianIMV/promptrim" target="_blank">Código abierto en GitHub</a>
+        · Gratis para siempre
+      </p>
+      <p style="margin-top: 8px">
+        Ayudando a desarrolladores y usuarios de IA en todo el mundo a ahorrar tokens y reducir
+        costos.
+      </p>
+    </footer>
+
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

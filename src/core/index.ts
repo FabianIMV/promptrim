@@ -82,3 +82,8 @@ export type {
   LedgerReport,
   Severity,
 } from './ledger';
+export { batchPreview, isBatch, splitBatch } from './batch';
+export { decodeShareState, encodeShareState } from './share';
+export type { ShareState } from './share';
+export { buildExportContent, exportFileName, exportMimeType, parseImportedFile } from './transfer';
+export type { ExportBundle, TransferFormat } from './transfer';
