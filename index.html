@@ -58,6 +58,7 @@
       "AI-powered rewriting",
       "Rule-based fast compression",
       "Token count estimation",
+      "Compress vs cache cost advisor",
       "Works with any LLM"
     ],
     "screenshot": "https://fabianimv.github.io/promptrim/og-image.png",
@@ -1003,6 +1004,195 @@
       border-color: var(--accent);
     }
 
+    /* COST ADVISOR */
+    .advisor {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 20px;
+      margin-bottom: 20px;
+    }
+
+    .advisor-header {
+      display: flex;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .advisor-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-right: auto;
+    }
+
+    .advisor-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .advisor-verdict {
+      margin: 14px 0 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      line-height: 1.5;
+      padding-left: 12px;
+      border-left: 3px solid var(--accent);
+    }
+
+    .advisor-verdict.cache { border-left-color: var(--green); }
+    .advisor-verdict.as-is { border-left-color: var(--text-muted); }
+
+    .advisor-reasons {
+      list-style: none;
+      margin: 0 0 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    .advisor-reasons li::before {
+      content: "· ";
+      color: var(--accent-light);
+    }
+
+    .advisor-scroll {
+      overflow-x: auto;
+      margin-top: 4px;
+    }
+
+    .advisor-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .advisor-table th,
+    .advisor-table td {
+      padding: 8px 10px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+    }
+
+    .advisor-table thead th {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .advisor-table th[scope="row"],
+    .advisor-table thead th:first-child {
+      text-align: left;
+      font-weight: 600;
+      white-space: normal;
+    }
+
+    .advisor-table tr.best th[scope="row"],
+    .advisor-table tr.best td {
+      background: rgba(76,175,125,0.08);
+    }
+
+    .advisor-table td.good { color: var(--green); font-weight: 700; }
+
+    .advisor-pick {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 0.66rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--green);
+      border: 1px solid rgba(76,175,125,0.5);
+      border-radius: 999px;
+      padding: 1px 7px;
+    }
+
+    .advisor-note {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin: 12px 0 0;
+      line-height: 1.55;
+    }
+
+    .advisor-group { margin-top: 16px; }
+
+    .advisor-group-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+    }
+
+    .advisor-group-count {
+      font-weight: 400;
+      text-transform: none;
+      color: var(--red);
+    }
+
+    .advisor-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .advisor-list li {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      font-size: 0.8rem;
+      background: var(--surface2);
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+
+    .advisor-mark { color: var(--red); flex: 0 0 auto; }
+
+    .advisor-list code {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.78rem;
+      color: var(--accent-light);
+    }
+
+    .advisor-why {
+      display: block;
+      color: var(--text-muted);
+      font-style: normal;
+      font-size: 0.76rem;
+      margin-top: 2px;
+    }
+
+    .advisor-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .advisor-output {
+      width: 100%;
+      margin-top: 10px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 0.8rem;
+      line-height: 1.5;
+      padding: 12px;
+      resize: vertical;
+    }
+
     /* FOOTER */
     footer {
       text-align: center;
@@ -1103,6 +1293,35 @@
     </div>
   </section>
 
+  <!-- Compress vs cache -->
+  <section class="how" id="compress-vs-cache">
+    <h2>Compress or cache?</h2>
+    <p class="how-sub">Compressing a prompt saves 15&ndash;30% once. Caching its static prefix saves about 90% on every repeated call. PromptTrim tells you which one is worth doing.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">&#9986;&#65039;</div>
+        <h3>Compression is a one-off</h3>
+        <p>Rewriting removes the filler and stops. A shorter prompt is cheaper on every call, but the ceiling is whatever filler your prompt had &mdash; typically 15&ndash;30%, and none of it on the code, JSON or examples PromptTrim refuses to touch.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">&#9851;</div>
+        <h3>Caching repeats</h3>
+        <p>A cache hit costs 10% of the input price on Anthropic, OpenAI and Gemini alike. Writing the cache costs 1.25&times; the input price for a 5-minute lifetime, or 2&times; for an hour &mdash; so it pays for itself on the 2nd call, or the 3rd for the 1-hour cache.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">&#9888;&#65039;</div>
+        <h3>One date can silently kill it</h3>
+        <p>A cache only matches an identical prefix. Today&rsquo;s date, a request id or a template variable at the top of a system prompt changes those bytes on every call: no cache hit, no error, full price. PromptTrim finds them and offers to move them below the breakpoint.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">&#128207;</div>
+        <h3>And minimums are real</h3>
+        <p>Nothing shorter than 512 tokens caches on Claude Opus 5, 1,024 on Sonnet 5, 4,096 on Haiku 4.5, 1,024 on GPT-5.6 and later (2,048 before it) and 2,048 on Gemini 2.5. Under those, caching does nothing at all &mdash; quietly.</p>
+      </div>
+    </div>
+    <p class="how-sub">Prices and caching rules verified on 2026-09-03 against the official documentation of <a class="hero-link" href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank" rel="noopener noreferrer">Anthropic</a>, <a class="hero-link" href="https://developers.openai.com/api/docs/guides/prompt-caching" target="_blank" rel="noopener noreferrer">OpenAI</a> and <a class="hero-link" href="https://ai.google.dev/gemini-api/docs/generate-content/caching" target="_blank" rel="noopener noreferrer">Google</a>.</p>
+  </section>
+
   <!-- FAQ -->
   <section class="faq">
     <h2>Frequently Asked Questions</h2>
@@ -1117,6 +1336,10 @@
     <div class="faq-item">
       <div class="faq-q">How much can I save?</div>
       <div class="faq-a">Fast Mode typically saves 20-40%. AI Mode saves 40-70% on verbose prompts. Savings depend on how wordy the original prompt is — instructions with lots of filler compress the most.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is compressing always the right move?</div>
+      <div class="faq-a">No, and PromptTrim will say so. If the same static prefix goes out thousands of times a day, prompt caching cuts about 90% off it on every call after the first, while compression cuts 15-30% once. The Cost Advisor prices both against your own call volume and recommends the cheaper one - including "don't compress, reorder these sections and cache".</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Will compression change what the AI does?</div>
