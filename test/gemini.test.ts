@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import {
-  formatGeminiFailure,
-  orderModels,
-  PREFERRED_MODELS,
-  SYSTEM_PROMPTS,
-} from '../src/providers/gemini';
+import { formatGeminiFailure, orderModels, PREFERRED_MODELS } from '../src/providers/gemini';
 
 describe('orderModels (ported from app.js)', () => {
   it('falls back to the preferred list when nothing is available', () => {
@@ -12,15 +7,15 @@ describe('orderModels (ported from app.js)', () => {
   });
 
   it('puts an exact preferred match before a lower-priority family', () => {
-    expect(orderModels(['gemini-2.0-flash', 'gemini-2.5-flash'])).toEqual([
+    expect(orderModels(['gemini-2.5-flash', 'gemini-3.8-flash'])).toEqual([
+      'gemini-3.8-flash',
       'gemini-2.5-flash',
-      'gemini-2.0-flash',
     ]);
   });
 
   it('keeps a dated snapshot next to its base name, above the next family', () => {
-    const ordered = orderModels(['gemini-2.0-flash', 'gemini-2.5-flash-preview-04-17']);
-    expect(ordered).toEqual(['gemini-2.5-flash-preview-04-17', 'gemini-2.0-flash']);
+    const ordered = orderModels(['gemini-2.5-flash', 'gemini-3.8-flash-preview-04-17']);
+    expect(ordered).toEqual(['gemini-3.8-flash-preview-04-17', 'gemini-2.5-flash']);
   });
 
   it('appends unknown models after the preferred ones', () => {
@@ -51,11 +46,5 @@ describe('formatGeminiFailure', () => {
         { model: 'b', message: 'bang' },
       ]),
     ).toBe('a: boom | b: bang');
-  });
-});
-
-describe('system prompts', () => {
-  it('covers every level', () => {
-    expect(Object.keys(SYSTEM_PROMPTS).sort()).toEqual(['aggressive', 'balanced', 'light']);
   });
 });

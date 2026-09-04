@@ -9,6 +9,7 @@ export type { Level, Rule, RuleCase } from './rules';
 export {
   countOpenAiTokens,
   estimateClaudeTokens,
+  countClaudeTokens,
   countGeminiTokens,
   countTokensForModel,
 } from './tokenizers';

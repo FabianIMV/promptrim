@@ -1,58 +1,64 @@
 /**
- * Gemini provider — ported from the legacy `app.js` (lines 246-377), keeping its
- * model discovery and error handling, now typed and DOM-free.
+ * Gemini `generateContent`, called straight from the browser.
  *
- * Phase 5 replaces the single "make it shorter" call with the two-step
- * compress → verify → repair pipeline behind a shared provider interface. Until
- * then this is deliberately the same behaviour the old app had.
+ * Checked against the official docs on 2026-09-03:
+ *
+ *  - Endpoint `POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent`,
+ *    header `x-goog-api-key`. CORS is allowed: a preflight answers
+ *    `access-control-allow-headers: x-goog-api-key,content-type`.
+ *  - **Structured output** is `generationConfig.responseMimeType = "application/json"`
+ *    plus `generationConfig.responseSchema` (camelCase on REST).
+ *    https://ai.google.dev/gemini-api/docs/structured-output
+ *  - **Models**: `gemini-3.8-flash` (current stable Flash, the default here),
+ *    `gemini-3.5-flash-lite` (default verifier), plus the 2.5 pair the app
+ *    already knew about. https://ai.google.dev/gemini-api/docs/models
+ *  - The system prompt goes in `systemInstruction`, not in `contents`.
+ *
+ * `orderModels`, `getGeminiModels` and `formatGeminiFailure` are the model
+ * discovery and error wording ported from the legacy `app.js` in Phase 0. They
+ * survive Phase 5 because they still serve the target-model picker and the
+ * token counter; what Phase 5 removes is the old one-shot "make it shorter"
+ * call, replaced by the compress → verify → repair pipeline.
  */
+
+import {
+  networkError,
+  parseJsonPayload,
+  parseRetryAfter,
+  ProviderError,
+  shortDetail,
+  statusMessage,
+} from './types';
+import type { CallOptions, ProviderClient, StructuredRequest, StructuredResponse } from './types';
+import { toGeminiSchema } from './schemas';
 
 export type CompressionLevel = 'light' | 'balanced' | 'aggressive';
 
-export const GEMINI_REQUEST_TIMEOUT_MS = 25_000;
+const LABEL = 'Gemini';
+const API_ROOT = 'https://generativelanguage.googleapis.com/v1beta';
 
-const GEMINI_STATUS_MESSAGES: Record<number, string> = {
-  400: 'Bad request sent to Gemini API.',
-  401: 'Invalid Gemini API key.',
-  403: 'Gemini API access denied for this key/project.',
-  404: 'Gemini model not available.',
-  429: 'Gemini API rate limit reached. Try again in a moment.',
-  500: 'Gemini service error. Please retry shortly.',
-  503: 'Gemini service temporarily unavailable.',
-};
-
-export const SYSTEM_PROMPTS: Record<CompressionLevel, string> = {
-  light:
-    'Rewrite this AI prompt more concisely. Remove filler words and minor redundancies. Keep all details and examples. Output only the rewritten prompt, nothing else.',
-  balanced:
-    'Compress this AI prompt to save tokens. Remove filler words, redundant phrasing, and verbose language. Preserve all key requirements, constraints, and context. Output only the compressed prompt, nothing else.',
-  aggressive:
-    'Aggressively compress this AI prompt to the minimum tokens needed. Remove everything non-essential: pleasantries, filler words, verbose phrasing, redundant context. Keep only the core task, key constraints, and critical context. Output only the compressed prompt, nothing else — no preamble, no explanation.',
-};
-
-/**
- * Preferred models in priority order. Exact names are tried first; versioned or
- * preview variants (e.g. gemini-2.5-flash-preview-04-17) follow immediately
- * after their base name so priority is preserved even when Google only
- * publishes dated snapshots.
- */
-export const PREFERRED_MODELS = [
-  'gemini-2.5-flash',
-  'gemini-2.0-flash',
+export const GEMINI_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash-lite',
   'gemini-2.5-pro',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro',
+  'gemini-2.5-flash',
 ] as const;
 
-const API_ROOT = 'https://generativelanguage.googleapis.com/v1beta';
+/**
+ * Preferred models in priority order for discovery. Exact names are tried
+ * first; versioned or preview variants (e.g. gemini-3-flash-preview) follow
+ * immediately after their base name so priority is preserved even when Google
+ * only publishes dated snapshots.
+ */
+export const PREFERRED_MODELS = [
+  'gemini-3.8-flash',
+  'gemini-3.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.5-pro',
+] as const;
 
 interface ModelListResponse {
   models?: { name?: string; supportedGenerationMethods?: string[] }[];
-}
-
-interface GenerateContentResponse {
-  promptFeedback?: { blockReason?: string; blockReasonMessage?: string };
-  candidates?: { finishReason?: string; content?: { parts?: { text?: string }[] } }[];
 }
 
 /** Order the caller's available models by preference. Pure; unit-tested. */
@@ -119,83 +125,103 @@ export function formatGeminiFailure(errors: readonly ModelError[]): string {
   return errors.map((e) => `${e.model}: ${e.message}`).join(' | ');
 }
 
-async function parseGeminiError(resp: Response): Promise<string> {
-  const fallback = GEMINI_STATUS_MESSAGES[resp.status] ?? `API error ${resp.status}`;
+interface GenerateContentResponse {
+  modelVersion?: string;
+  promptFeedback?: { blockReason?: string; blockReasonMessage?: string };
+  candidates?: { finishReason?: string; content?: { parts?: { text?: string }[] } }[];
+  usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
+}
+
+/** Exported for tests: `responseMimeType`/`responseSchema` casing is REST-specific. */
+export function buildGeminiBody(request: StructuredRequest): Record<string, unknown> {
+  return {
+    systemInstruction: { parts: [{ text: request.system }] },
+    contents: [{ role: 'user', parts: [{ text: request.user }] }],
+    generationConfig: {
+      maxOutputTokens: request.maxOutputTokens,
+      responseMimeType: 'application/json',
+      responseSchema: toGeminiSchema(request.schema),
+    },
+  };
+}
+
+/** `{ error: { code, message, status } }` is the documented error body. */
+export function geminiErrorDetail(body: unknown): string | null {
+  const error = (body as { error?: { message?: unknown } } | null)?.error;
+  return shortDetail(error?.message);
+}
+
+async function readError(resp: Response): Promise<ProviderError> {
+  const retryAfter = parseRetryAfter(resp.headers);
+  let detail: string | null = null;
   try {
-    const json = (await resp.json()) as { error?: { message?: string } };
-    return json.error?.message ?? fallback;
+    detail = geminiErrorDetail(await resp.json());
   } catch {
-    return fallback;
+    detail = null;
   }
+  return new ProviderError('gemini', statusMessage(LABEL, resp.status, detail, retryAfter), {
+    status: resp.status,
+    retryAfterSeconds: retryAfter,
+  });
 }
 
-export async function aiCompress(
-  text: string,
-  level: CompressionLevel,
-  apiKey: string,
-): Promise<string> {
-  const models = await getGeminiModels(apiKey);
-  const errors: ModelError[] = [];
-
-  for (const model of models) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), GEMINI_REQUEST_TIMEOUT_MS);
-    try {
-      const resp = await fetch(`${API_ROOT}/models/${model}:generateContent`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM_PROMPTS[level] }] },
-          generationConfig: { maxOutputTokens: 2048 },
-          contents: [{ role: 'user', parts: [{ text }] }],
-        }),
-        signal: controller.signal,
-      });
-
-      if (!resp.ok) {
-        errors.push({ model, message: await parseGeminiError(resp) });
-        continue;
-      }
-
-      const data = (await resp.json()) as GenerateContentResponse;
-      const blockReason = data.promptFeedback?.blockReason;
-      if (blockReason) {
-        errors.push({
-          model,
-          message:
-            data.promptFeedback?.blockReasonMessage ??
-            `Gemini blocked the request (${blockReason}).`,
-        });
-        continue;
-      }
-
-      const candidate = data.candidates?.[0];
-      const output = (candidate?.content?.parts ?? [])
-        .map((p) => p.text ?? '')
-        .join('')
-        .trim();
-      if (!output) {
-        errors.push({
-          model,
-          message: candidate?.finishReason
-            ? `Gemini did not return text (finish reason: ${candidate.finishReason}).`
-            : 'Gemini returned no text. Check your key, prompt content, and model availability.',
-        });
-        continue;
-      }
-      return output;
-    } catch (err) {
-      errors.push({
-        model,
-        message:
-          (err as Error)?.name === 'AbortError'
-            ? `Gemini API request timed out after ${Math.round(GEMINI_REQUEST_TIMEOUT_MS / 1000)} seconds.`
-            : 'Network error calling Gemini API. Please check your connection and try again.',
-      });
-    } finally {
-      clearTimeout(timeoutId);
-    }
+async function complete(
+  request: StructuredRequest,
+  { apiKey, model, signal }: CallOptions,
+): Promise<StructuredResponse> {
+  let resp: Response;
+  try {
+    resp = await fetch(`${API_ROOT}/models/${model}:generateContent`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-goog-api-key': apiKey },
+      body: JSON.stringify(buildGeminiBody(request)),
+      signal,
+    });
+  } catch (err) {
+    throw networkError('gemini', LABEL, err);
   }
 
-  throw new Error(formatGeminiFailure(errors));
+  if (!resp.ok) throw await readError(resp);
+
+  const data = (await resp.json()) as GenerateContentResponse;
+  const blockReason = data.promptFeedback?.blockReason;
+  if (blockReason) {
+    throw new ProviderError(
+      'gemini',
+      data.promptFeedback?.blockReasonMessage ?? `${LABEL} blocked the request (${blockReason}).`,
+    );
+  }
+
+  const candidate = data.candidates?.[0];
+  if (candidate?.finishReason === 'MAX_TOKENS') {
+    throw new ProviderError(
+      'gemini',
+      `${LABEL} hit the output limit before finishing. Try a shorter prompt.`,
+    );
+  }
+
+  const text = (candidate?.content?.parts ?? []).map((part) => part.text ?? '').join('');
+
+  return {
+    data: parseJsonPayload('gemini', LABEL, text),
+    usage: data.usageMetadata
+      ? {
+          inputTokens: data.usageMetadata.promptTokenCount ?? 0,
+          outputTokens: data.usageMetadata.candidatesTokenCount ?? 0,
+        }
+      : null,
+    model: data.modelVersion ?? model,
+  };
 }
+
+export const geminiProvider: ProviderClient = {
+  id: 'gemini',
+  label: 'Google Gemini',
+  models: GEMINI_MODELS,
+  defaultModel: 'gemini-3.8-flash',
+  defaultVerifierModel: 'gemini-3.5-flash-lite',
+  keyLabel: 'Gemini API key',
+  keyPlaceholder: 'AIza...',
+  keyHelpUrl: 'https://aistudio.google.com/app/apikey',
+  complete,
+};

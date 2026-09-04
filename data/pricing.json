@@ -1,5 +1,5 @@
 {
-  "last_verified": "2026-09-02",
+  "last_verified": "2026-09-03",
   "note": "Prices verified directly on each provider's official pricing page on last_verified. Do not edit from memory — re-verify on the source URL before changing a number.",
   "models": [
     {
@@ -49,6 +49,16 @@
       "last_verified": "2026-09-02"
     },
     {
+      "id": "gpt-5.6-terra",
+      "provider": "openai",
+      "label": "GPT-5.6 Terra",
+      "input_per_mtok": 2,
+      "output_per_mtok": 12,
+      "cached_input_per_mtok": 0.2,
+      "source_url": "https://developers.openai.com/api/docs/pricing",
+      "last_verified": "2026-09-03"
+    },
+    {
       "id": "gpt-5.6-luna",
       "provider": "openai",
       "label": "GPT-5.6 Luna",
@@ -87,6 +97,29 @@
       "cached_input_per_mtok": 1.25,
       "source_url": "https://developers.openai.com/api/docs/pricing",
       "last_verified": "2026-09-02"
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "provider": "gemini",
+      "label": "Gemini 3.8 Flash",
+      "input_per_mtok": 0.75,
+      "output_per_mtok": 3.75,
+      "cache_write_per_mtok": 0.075,
+      "cache_storage_per_mtok_hour": 0.5,
+      "notes": "Promotional pricing through 2026-12-31; from 2027-01-01 input $1.50, output $7.50, caching $0.15, storage $1.00 per MTok-hour.",
+      "source_url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "last_verified": "2026-09-03"
+    },
+    {
+      "id": "gemini-3.5-flash-lite",
+      "provider": "gemini",
+      "label": "Gemini 3.5 Flash-Lite",
+      "input_per_mtok": 0.3,
+      "output_per_mtok": 2.5,
+      "cache_write_per_mtok": 0.03,
+      "cache_storage_per_mtok_hour": 1,
+      "source_url": "https://ai.google.dev/gemini-api/docs/pricing",
+      "last_verified": "2026-09-03"
     },
     {
       "id": "gemini-2.5-pro",

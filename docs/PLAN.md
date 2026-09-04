@@ -285,7 +285,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | 2 | ✅ Completada | 2026-09-03 | [#11](https://github.com/FabianIMV/promptrim/pull/11) | `core/ledger/` (extracción, verificación, duplicados, restauración), veto del ledger sobre `compress()` en Aggressive, panel "Verification" en la UI y corpus anotado de 30 prompts en `bench/corpus/phase2/`. Recall 98,8% y precisión 88,1% sobre 327 restricciones críticas anotadas; 0 falsos "preservado". 737 tests (+394). Ver 6.3. |
 | 3 | ✅ Completada | 2026-09-03 | [#12](https://github.com/FabianIMV/promptrim/pull/12) | Diff construido desde `Change[]` (`src/core/diff.ts`, sin librería de diff de strings), deshacer por cambio y por regla con recálculo de tokens/ledger, panel de reglas persistido en `localStorage`, y los cambios bloqueados por el ledger integrados en la propia vista de diff. 896 tests (+159). Ver 6.4. |
 | 4 | Pendiente | | | |
-| 5 | Pendiente | | | |
+| 5 | ✅ Completada | 2026-09-04 | (PR abierto desde `feat/fase-5-ai-verify`) | `src/providers/` con interfaz común y tres clientes REST (Anthropic con `output_config.format` y la cabecera de acceso directo desde navegador, OpenAI con `response_format` + `max_completion_tokens`, Gemini con `responseSchema`), pipeline comprimir → verificar → reparar con veto local del ledger, claves solo en memoria salvo opt-in a `sessionStorage`, coste de la propia llamada mostrado antes de ejecutarla, y `count_tokens` exacto de Anthropic (deuda de la Fase 1). 973 tests (+77). Ver 6.5. |
 | 6 | Pendiente | | | |
 | 7 (opc.) | Pendiente | | | |
 | 8 (opc.) | Pendiente | | | |
@@ -613,3 +613,126 @@ en ningún paso (captura en la sesión, no versionada, igual que en fases anteri
 - El modo IA (Fase 5) no tiene diff ni panel de reglas propio, porque no produce `Change[]`. Si la Fase 5 quiere
   un diff equivalente para IA, necesitará su propio mecanismo de trazabilidad (p. ej. que el proveedor devuelva
   también qué restricciones tocó), no puede reutilizar `src/core/diff.ts` tal cual.
+
+### 6.5 Fase 5 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-04): `npm run lint` ✅, `npm test` ✅ (973 tests, 23 archivos,
++77 sobre el cierre de la Fase 3), `npm run build` ✅ (`tsc --noEmit` + `vite build`). Bundle inicial:
+33,00 kB gzip (`index-*.js`), frente a 26,63 kB al cerrar la Fase 3 (+6,37 kB gzip por los tres clientes, el
+pipeline, el estimador de coste y el panel de IA; sin dependencias nuevas — `package.json` no cambia).
+
+**Smoke test manual** con Playwright + Chromium headless contra `vite preview`, interceptando `api.anthropic.com`
+para no gastar tokens reales: se pega un prompt con cortesía y cinco restricciones, se activa el modo IA, se
+comprueba que el coste aparece antes de ejecutar (`$0.0087 — 2 llamadas … hasta $0.021 si corren las 5`), que sin
+clave **no se hace ninguna llamada**, y con clave falsa que corren las 5 llamadas en el orden esperado
+(comprimir → verificar → reparar ×2 → re-verificar), que la cabecera `anthropic-dangerous-direct-browser-access`
+viaja en todas, que `effort: medium` se envía a Opus 5 y **no** a Haiku 4.5, que la clave no aparece en el DOM ni
+en `localStorage`, que `sessionStorage` solo se llena tras marcar la casilla y se vacía al desmarcarla, y que no
+hay errores de consola en ningún paso (captura en la sesión, no versionada, igual que en fases anteriores).
+
+**Verificado en la documentación oficial el 2026-09-03** (antes de escribir cada cliente, como pedía el encargo):
+
+| Proveedor | Cabeceras | Salida estructurada | Modelos | Trampas |
+|-----------|-----------|---------------------|---------|---------|
+| Anthropic | `x-api-key`, `anthropic-version: 2023-06-01`, `anthropic-dangerous-direct-browser-access: true` | `output_config.format = {type:"json_schema", schema}` — **GA**, sin cabecera beta; `output_format` está obsoleto | `claude-opus-5` (por defecto), `claude-sonnet-5`, `claude-haiku-4-5` (alias de `claude-haiku-4-5-20251001`) | `output_config.effort` **no** existe en Haiku 4.5 ("Default effort: Not supported"); `budget_tokens`, `temperature` y `top_p` devuelven 400 |
+| OpenAI | `authorization: Bearer` | `response_format = {type:"json_schema", json_schema:{name, schema, strict:true}}` | `gpt-5.6-sol`, `gpt-5.6-terra`, `gpt-5.6-luna` | **`max_completion_tokens`, no `max_tokens`** (la familia GPT-5.x lo rechaza), y tampoco acepta `temperature`/`top_p`/penalizaciones |
+| Gemini | `x-goog-api-key` | `generationConfig.responseMimeType: "application/json"` + `responseSchema` | `gemini-3.8-flash` (por defecto), `gemini-3.5-flash-lite`, `gemini-2.5-pro/flash` | El prompt de sistema va en `systemInstruction`, no en `contents` |
+
+Además se comprobó **en el propio cable** que los tres endpoints permiten CORS desde un origen arbitrario (un
+preflight `OPTIONS` responde `access-control-allow-origin` en los tres, y Anthropic lista explícitamente
+`anthropic-dangerous-direct-browser-access` entre las cabeceras permitidas). Sin eso, la premisa de la fase —
+navegador puro, sin backend — no se sostenía, y era la incógnita mayor de OpenAI.
+
+**Decisiones tomadas en esta fase:**
+
+1. **`fetch` contra el REST oficial, sin SDK de ningún proveedor.** La app es una página estática sin backend con
+   la clave del propio visitante; empaquetar tres SDK para enviar tres cuerpos JSON costaría bundle inicial (el
+   presupuesto que la Fase 1 fijó) a cambio de nada. Los nombres exactos de parámetros quedan fijados por
+   `test/providers-request.test.ts`, que es lo que un SDK habría aportado: sin él, un renombrado sería un 400
+   silencioso en el navegador de alguien y no hay test de integración posible (no hay claves en CI).
+2. **El verificador local (Fase 2) manda sobre la columna ✓/✗; el modelo solo aporta evidencia.** Que un modelo
+   diga "preservada" sobre una frase que no está en la salida es exactamente el falso ✓ que el ledger existe para
+   impedir (§6.3). Cuando discrepan, la UI muestra el ✗ local y explica la discrepancia en texto. En cambio, para
+   **decidir qué reparar se toma la unión de ambos**: cualquier restricción crítica que cualquiera de los dos dé
+   por perdida entra en la reparación, que es la lectura estricta.
+3. **La reparación se dispara por restricciones `critical`, no por todas.** Es lo que pide la Sección 3, y es lo
+   coherente con la clasificación de la Fase 2: reparar `instruction`/`entity` gastaría llamadas en deshacer
+   precisamente la compresión que se pidió.
+4. **Cinco llamadas como techo, no cuatro.** El plan describe comprimir + verificar + hasta 2 reparaciones. A eso
+   se añade **una re-verificación final cuando hubo reparación**: sin ella, la evidencia que se muestra junto a
+   cada ✓ describiría un texto que ya no está en pantalla. El coste de esa llamada se muestra en el techo
+   (`hasta $X si corren las 5`), no se esconde.
+5. **Un fallo del verificador no tira la compresión.** Si la llamada B falla (429, red), el paso queda en ✗ con su
+   mensaje y la ejecución sigue con el ledger local. Perder la segunda opinión no es motivo para perder un buen
+   resultado. Un fallo de la llamada A sí propaga, porque no hay nada que enseñar.
+6. **Claves: `sessionStorage` y solo con opt-in explícito** (`src/providers/keys.ts`, único punto del código
+   autorizado a escribir una clave). Tres detalles que hacen cumplible la promesa: el propio flag "recordar" vive
+   también en `sessionStorage` (guardarlo en `localStorage` re-armaría la persistencia en una visita futura que el
+   usuario no eligió); desmarcar la casilla **borra** lo guardado, incluido lo que una versión anterior hubiera
+   dejado en `localStorage`; y `loadKey` devuelve vacío mientras el opt-in esté apagado aunque haya un valor
+   residual. `test/providers-keys.test.ts` afirma literalmente que `localStorage` queda vacío.
+7. **`effort: 'medium'` en los modelos Anthropic que lo aceptan.** Comprimir es reescribir, no investigar: el
+   `high` por defecto gasta tokens de razonamiento que paga el usuario sin ganancia medible. Haiku 4.5 no acepta
+   el parámetro, así que `supportsEffort()` lo omite — es la clase de detalle que solo aparece leyendo la tabla de
+   modelos y que habría dado un 400 en el modelo más barato, justo el que se usa por defecto como verificador.
+8. **Esquemas JSON en la intersección de los tres dialectos** (`src/providers/schemas.ts`): solo `object`,
+   `string`, `boolean` y arrays de strings; `additionalProperties: false` y todas las propiedades en `required`
+   (lo exige el `strict` de OpenAI); ningún `minLength`/`maximum` (los rechaza Anthropic). Para Gemini se elimina
+   `additionalProperties` — su `responseSchema` es un subconjunto de OpenAPI 3.0 donde no aporta nada, porque
+   `required` ya lista todas las propiedades. Hay un test que recorre los esquemas y lo comprueba.
+9. **`data/pricing.json` crece con tres modelos verificados hoy** (`gpt-5.6-terra`, `gemini-3.8-flash`,
+   `gemini-3.5-flash-lite`), porque el selector de modelos del modo IA solo ofrece modelos que el archivo sabe
+   tarifar: sin precio no hay estimación de coste previa, y ofrecer un modelo sin poder decir lo que cuesta
+   contradice el discurso de la app. Los precios de la Fase 1 se releyeron y no cambiaron.
+10. **Se salda la deuda que la Fase 1 dejó apuntada a esta fase**: `countClaudeTokens` llama a
+    `POST /v1/messages/count_tokens` cuando hay clave de Anthropic, con caída silenciosa al estimador calibrado
+    ante cualquier fallo (un badge de tokens nunca justifica un banner de error). `countTokensForModel` pasa a
+    recibir "la clave del proveedor de este modelo" en vez de "la clave de Gemini".
+
+**Desviaciones respecto al plan:**
+
+- **Rama.** El encargo de esta sesión fijó `feat/fase-5-ai-verify` (el nombre de la Sección 3), mientras que la
+  sesión venía configurada con `claude/fase-5-ai-verify-bp451h`. Se desarrolló y se abrió el PR desde
+  `feat/fase-5-ai-verify`, siguiendo la instrucción explícita del encargo; la rama de la sesión se dejó apuntando
+  al mismo commit. Es la primera fase que no usa el nombre `claude/...` de las fases 0-3.
+- **Orden de fases.** La Sección 3 fija el orden 0 → … → 6 y la **Fase 4 (Cost Advisor) sigue pendiente**; el
+  encargo pidió la Fase 5 igualmente. No hubo bloqueo real: la Fase 5 no consume nada de la 4. Sí queda una
+  intersección que la Fase 4 debe respetar: `estimateAiCost` ya calcula coste por modelo leyendo `pricing.json`,
+  y el Cost Advisor debería reutilizar `costForTokens`/`projectedMonthlyCost` en vez de introducir una segunda
+  aritmética de precios.
+- **El criterio de aceptación "≥ 98% de restricciones críticas preservadas" se mide contra un proveedor
+  simulado, no contra un modelo real.** No hay claves de API en CI y no las hubo en esta sesión, así que
+  `test/providers-corpus.test.ts` mide **lo que aporta el pipeline**, no lo que aporta Claude, GPT o Gemini: un
+  compresor simulado borra la frase de 1 de cada 15 restricciones críticas y un reparador simulado falla la
+  primera restricción de su primer intento y tiene un 5% de restricciones que nunca consigue colocar. Sobre los
+  30 prompts del corpus (386 restricciones críticas) el resultado es **99,74% (385/386) tras dos intentos y
+  93,01% tras uno**; el test afirma ambos números, de modo que bajar `MAX_REPAIRS` a 1 rompe la suite. **El
+  número con modelos reales sigue debiéndose** y es deuda explícita para el benchmark de la Fase 6, que es quien
+  puede gastar tokens de verdad.
+- **Sin tests de componente/DOM**, igual que en las fases 0-3: el repositorio sigue sin `@testing-library/preact`
+  ni jsdom. `AiPanel` y la extensión de `LedgerPanel` se verificaron con el smoke test de Playwright descrito
+  arriba.
+- **Copia de la landing y del README actualizadas.** No es trabajo de la Fase 6 adelantado: la tarjeta "AI Mode
+  (Gemini)", la FAQ de privacidad y la sección "Gemini API Key Setup" pasaban a ser **falsas** con este cambio.
+  Se corrigieron solo esos puntos (incluida la afirmación sin benchmark "up to 70% token reduction", que la
+  Sección 0 fila 5 ya señalaba como inventada); la reescritura completa sigue siendo de la Fase 6.
+
+**Deuda pendiente que heredan las fases siguientes:**
+
+- **Medir el modo IA con modelos reales.** Es lo único de la Sección 3 que esta fase no puede cerrar sola. La
+  Fase 6 (`npm run bench`) debería aceptar claves por variable de entorno y publicar la tasa real de restricciones
+  críticas preservadas por proveedor y nivel, junto al coste medido. Hasta entonces, ningún material público debe
+  afirmar un porcentaje para el modo IA.
+- **El modo IA sigue sin diff.** Se mantiene la deuda que la Fase 3 dejó anotada (§6.4, punto 6): el proveedor
+  devuelve texto plano, no `Change[]`. Ahora hay un mecanismo parcial de trazabilidad (`kept`/`dropped` del paso A
+  y la evidencia del paso B), pero no offsets; un diff real para IA exigiría comparar strings, con la pérdida de
+  `ruleId` que la Fase 3 decidió evitar.
+- **Sin reintentos automáticos ante 429.** El error expone `retryAfterSeconds` y el mensaje lo dice ("Retry in
+  30s"), pero no hay backoff: la decisión de reintentar —y de gastar— es del usuario. Si una fase futura añade
+  reintentos, debe contarlos en la estimación de coste previa, o la cifra deja de ser honesta.
+- **La estimación de coste usa el original como cota superior de la salida** (el comprimido aún no existe) y no
+  incluye las reparaciones en el mínimo. Es conservadora por diseño y así está etiquetada en la UI, pero si la
+  Fase 6 publica cifras de coste debe usar el `usage` real que ya devuelven los tres proveedores, no la
+  estimación.
+- **`gemini-3.8-flash` tiene precio promocional hasta el 2026-12-31** (input $0.75 → $1.50 el 2027-01-01), anotado
+  en `notes` dentro de `pricing.json`. Alguna sesión de 2027 tendrá que re-verificarlo, como manda la Sección 4.

@@ -6,6 +6,7 @@ import {
   compress,
   costForTokens,
   countTokensForModel,
+  extractConstraints,
   getModel,
   LEVELS,
   projectDiff,
@@ -21,7 +22,20 @@ import type {
   ModelPricing,
   TokenCountResult,
 } from '../core';
-import { aiCompress } from '../providers/gemini';
+import {
+  DEFAULT_PROVIDER_ID,
+  estimateAiCost,
+  formatUsd,
+  getProvider,
+  loadKeys,
+  PROVIDERS,
+  runAiPipeline,
+  saveKey,
+  setRemembering,
+  isRemembering,
+} from '../providers';
+import type { AiCostEstimate, AiStep, AiVerdict, ProviderId } from '../providers';
+import { AiPanel } from './AiPanel';
 import { DiffView } from './DiffView';
 import { LedgerPanel } from './LedgerPanel';
 import { RulesPanel } from './RulesPanel';
@@ -30,6 +44,8 @@ const AI_MODE_STORAGE_KEY = 'promptrim.aiMode';
 const DISABLED_RULES_STORAGE_KEY = 'promptrim.disabledRules';
 const DEFAULT_MODEL_ID = 'claude-sonnet-5';
 const DEFAULT_CALLS_PER_DAY = 1000;
+/** Long enough that typing does not trigger a tokenizer run per keystroke. */
+const ESTIMATE_DEBOUNCE_MS = 400;
 
 const LEVEL_LABELS: Record<Level, string> = {
   light: 'Light',
@@ -65,12 +81,31 @@ interface Run {
   constraints: Constraint[] | null;
 }
 
+/** What the AI pipeline reported about its own run. */
+interface AiOutcome {
+  verdicts: Record<string, AiVerdict>;
+  repairs: number;
+  calls: number;
+  spentUsd: number | null;
+}
+
 export function App() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [level, setLevel] = useState<Level>('balanced');
   const [aiMode, setAiMode] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [providerId, setProviderId] = useState<ProviderId>(DEFAULT_PROVIDER_ID);
+  const [apiKeys, setApiKeys] = useState<Partial<Record<ProviderId, string>>>({});
+  const [remember, setRemember] = useState(false);
+  const [compressModel, setCompressModel] = useState(
+    getProvider(DEFAULT_PROVIDER_ID)!.defaultModel,
+  );
+  const [verifyModel, setVerifyModel] = useState(
+    getProvider(DEFAULT_PROVIDER_ID)!.defaultVerifierModel,
+  );
+  const [aiSteps, setAiSteps] = useState<AiStep[] | null>(null);
+  const [aiEstimate, setAiEstimate] = useState<AiCostEstimate | null>(null);
+  const [aiOutcome, setAiOutcome] = useState<AiOutcome | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [savings, setSavings] = useState<Savings | null>(null);
@@ -84,10 +119,16 @@ export function App() {
   const [run, setRun] = useState<Run | null>(null);
   const [disabledChangeKeys, setDisabledChangeKeys] = useState<Set<string>>(new Set());
   const [disabledRuleIds, setDisabledRuleIds] = useState<Set<string>>(new Set());
-  const apiKeyRef = useRef<HTMLInputElement>(null);
+  const apiKeyRef = useRef<HTMLInputElement | null>(null);
 
+  const provider = getProvider(providerId) ?? PROVIDERS[0]!;
+  const apiKey = apiKeys[providerId] ?? '';
   const targetModel = useMemo(() => getModel(targetModelId) ?? allModels()[0]!, [targetModelId]);
-  const geminiKeyForCounting = targetModel.provider === 'gemini' ? apiKey : undefined;
+  /**
+   * Token counting can use the user's key, but only the one belonging to the
+   * target model's own provider — never a key for a different vendor.
+   */
+  const countingKey = apiKeys[targetModel.provider as ProviderId] || undefined;
 
   useEffect(() => {
     try {
@@ -98,27 +139,62 @@ export function App() {
       // Storage can be unavailable (private mode), or hold something that is
       // not valid JSON; the default (nothing disabled) is fine either way.
     }
+    // Keys are only ever restored when the user opted in during this session.
+    if (isRemembering()) {
+      setRemember(true);
+      setApiKeys(loadKeys());
+    }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
-    countTokensForModel(input, targetModel, geminiKeyForCounting).then((result) => {
+    countTokensForModel(input, targetModel, countingKey).then((result) => {
       if (!cancelled) setInTokenResult(result);
     });
     return () => {
       cancelled = true;
     };
-  }, [input, targetModel, geminiKeyForCounting]);
+  }, [input, targetModel, countingKey]);
 
   useEffect(() => {
     let cancelled = false;
-    countTokensForModel(output, targetModel, geminiKeyForCounting).then((result) => {
+    countTokensForModel(output, targetModel, countingKey).then((result) => {
       if (!cancelled) setOutTokenResult(result);
     });
     return () => {
       cancelled = true;
     };
-  }, [output, targetModel, geminiKeyForCounting]);
+  }, [output, targetModel, countingKey]);
+
+  /** What the pipeline itself would cost, shown before the user runs it. */
+  useEffect(() => {
+    if (!aiMode || !input.trim()) {
+      setAiEstimate(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      estimateAiCost({
+        text: input,
+        constraints: extractConstraints(input),
+        level,
+        provider: provider.id,
+        compressModelId: compressModel,
+        verifyModelId: verifyModel,
+        apiKey: apiKey || undefined,
+      })
+        .then((estimate) => {
+          if (!cancelled) setAiEstimate(estimate);
+        })
+        .catch(() => {
+          if (!cancelled) setAiEstimate(null);
+        });
+    }, ESTIMATE_DEBOUNCE_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [aiMode, input, level, provider, compressModel, verifyModel, apiKey]);
 
   const onToggleAi = useCallback((next: boolean) => {
     setAiMode(next);
@@ -130,6 +206,31 @@ export function App() {
     if (next) queueMicrotask(() => apiKeyRef.current?.focus());
   }, []);
 
+  const onProviderChange = useCallback((id: ProviderId) => {
+    const next = getProvider(id);
+    if (!next) return;
+    setProviderId(id);
+    setCompressModel(next.defaultModel);
+    setVerifyModel(next.defaultVerifierModel);
+    setAiSteps(null);
+  }, []);
+
+  const onApiKeyChange = useCallback(
+    (key: string) => {
+      setApiKeys((prev) => ({ ...prev, [providerId]: key }));
+      saveKey(providerId, key);
+    },
+    [providerId],
+  );
+
+  const onRememberChange = useCallback(
+    (next: boolean) => {
+      setRemember(next);
+      setRemembering(next, apiKeys);
+    },
+    [apiKeys],
+  );
+
   const onInput = useCallback((value: string) => {
     setInput(value);
     setError('');
@@ -137,6 +238,8 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setAiSteps(null);
+    setAiOutcome(null);
     setDisabledChangeKeys(new Set());
   }, []);
 
@@ -144,8 +247,8 @@ export function App() {
   const refreshSavings = useCallback(
     async (source: string, result: string) => {
       const [before, after] = await Promise.all([
-        countTokensForModel(source, targetModel, geminiKeyForCounting),
-        countTokensForModel(result, targetModel, geminiKeyForCounting),
+        countTokensForModel(source, targetModel, countingKey),
+        countTokensForModel(result, targetModel, countingKey),
       ]);
       if (after.tokens >= before.tokens || before.tokens === 0) {
         setSavings(null);
@@ -160,7 +263,7 @@ export function App() {
       });
       return true;
     },
-    [targetModel, geminiKeyForCounting, callsPerDay],
+    [targetModel, countingKey, callsPerDay],
   );
 
   const onRestore = useCallback(
@@ -237,7 +340,9 @@ export function App() {
       return;
     }
     if (aiMode && !apiKey) {
-      setError('Enter your Gemini API key above, or uncheck "AI-powered" to use fast mode.');
+      setError(
+        `Enter your ${provider.keyLabel} above, or uncheck "AI mode" to compress locally with Fast mode.`,
+      );
       return;
     }
 
@@ -246,16 +351,39 @@ export function App() {
     setOutput('');
     setLedger(null);
     setBlocked([]);
+    setAiOutcome(null);
     setDisabledChangeKeys(new Set());
     setBusy(true);
 
     try {
       let result: string;
       let nextRun: Run = { source: text, changes: [], protectedRegions: 0, constraints: null };
+      let nextLedger: Ledger;
 
       if (aiMode) {
-        result = await aiCompress(text, level, apiKey);
+        const aiRun = await runAiPipeline(text, {
+          provider,
+          apiKey,
+          level,
+          compressModel,
+          verifyModel,
+          onProgress: setAiSteps,
+        });
+        result = aiRun.output;
+        nextRun = { ...nextRun, constraints: aiRun.constraints };
+        nextLedger = {
+          constraints: aiRun.constraints,
+          report: aiRun.report,
+          duplicates: aiRun.duplicates,
+        };
+        setAiOutcome({
+          verdicts: aiRun.verdicts,
+          repairs: aiRun.repairs,
+          calls: aiRun.calls,
+          spentUsd: spentUsd(aiRun.usage, compressModel),
+        });
       } else {
+        setAiSteps(null);
         const compressed = compress(text, level, { disabledRuleIds: [...disabledRuleIds] });
         result = compressed.output;
         nextRun = {
@@ -265,18 +393,23 @@ export function App() {
           constraints: compressed.constraints,
         };
         setBlocked(compressed.blocked);
+        nextLedger = buildLedger(
+          text,
+          result,
+          compressed.constraints ? { constraints: compressed.constraints } : {},
+        );
       }
 
       setOutput(result);
       setRun(nextRun);
-      setLedger(
-        buildLedger(text, result, nextRun.constraints ? { constraints: nextRun.constraints } : {}),
-      );
+      setLedger(nextLedger);
 
       const saved = await refreshSavings(text, result);
       if (!saved) {
         setError(
-          'This prompt is already concise — minimal savings in Fast mode. Try AI mode or Aggressive level for more compression.',
+          aiMode
+            ? 'The model could not make this prompt shorter without losing constraints.'
+            : 'This prompt is already concise — minimal savings in Fast mode. Try AI mode or Aggressive level for more compression.',
         );
       }
     } catch (err) {
@@ -284,7 +417,17 @@ export function App() {
     } finally {
       setBusy(false);
     }
-  }, [aiMode, apiKey, input, level, refreshSavings, disabledRuleIds]);
+  }, [
+    aiMode,
+    apiKey,
+    provider,
+    compressModel,
+    verifyModel,
+    input,
+    level,
+    refreshSavings,
+    disabledRuleIds,
+  ]);
 
   const onCopy = useCallback(async () => {
     if (!output) return;
@@ -305,6 +448,8 @@ export function App() {
     setLedger(null);
     setBlocked([]);
     setRun(null);
+    setAiSteps(null);
+    setAiOutcome(null);
     setDisabledChangeKeys(new Set());
   }, []);
 
@@ -332,7 +477,7 @@ export function App() {
             checked={aiMode}
             onChange={(e) => onToggleAi((e.currentTarget as HTMLInputElement).checked)}
           />
-          AI-powered (Gemini API)
+          AI mode (Anthropic · OpenAI · Gemini)
         </label>
 
         <RulesPanel disabledRuleIds={disabledRuleIds} onToggle={onToggleRuleEnabled} />
@@ -346,9 +491,9 @@ export function App() {
             value={targetModelId}
             onChange={(e) => setTargetModelId((e.currentTarget as HTMLSelectElement).value)}
           >
-            {(Object.keys(MODELS_BY_PROVIDER) as ModelPricing['provider'][]).map((provider) => (
-              <optgroup key={provider} label={PROVIDER_LABELS[provider]}>
-                {MODELS_BY_PROVIDER[provider]!.map((model) => (
+            {(Object.keys(MODELS_BY_PROVIDER) as ModelPricing['provider'][]).map((entry) => (
+              <optgroup key={entry} label={PROVIDER_LABELS[entry]}>
+                {MODELS_BY_PROVIDER[entry]!.map((model) => (
                   <option key={model.id} value={model.id}>
                     {model.label}
                   </option>
@@ -379,28 +524,24 @@ export function App() {
         </span>
       </div>
 
-      <div class={`api-key-wrap${aiMode ? ' visible' : ''}`}>
-        <input
-          ref={apiKeyRef}
-          type="password"
-          placeholder="AIza..."
-          autocomplete="off"
-          aria-label="Gemini API key"
-          value={apiKey}
-          onInput={(e) => setApiKey((e.currentTarget as HTMLInputElement).value.trim())}
+      {aiMode && (
+        <AiPanel
+          providers={PROVIDERS}
+          provider={provider}
+          onProviderChange={onProviderChange}
+          compressModel={compressModel}
+          onCompressModelChange={setCompressModel}
+          verifyModel={verifyModel}
+          onVerifyModelChange={setVerifyModel}
+          apiKey={apiKey}
+          onApiKeyChange={onApiKeyChange}
+          remember={remember}
+          onRememberChange={onRememberChange}
+          estimate={aiEstimate}
+          steps={aiSteps}
+          keyInputRef={apiKeyRef}
         />
-        <span class="api-info">Used only in this session · Never sent to our servers</span>
-      </div>
-      <div class="api-help">
-        <a
-          class="hero-link"
-          href="https://github.com/FabianIMV/promptrim#gemini-api-key-setup"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Help: Want to know how to use AI Mode?
-        </a>
-      </div>
+      )}
 
       <div class={`savings${savings ? ' visible' : ''}`}>
         <div class="savings-title">Compression results</div>
@@ -429,9 +570,23 @@ export function App() {
             {run.protectedRegions === 1 ? '' : 's'} left untouched
           </div>
         )}
+        {savings && aiMode && aiOutcome && (
+          <div class="savings-note">
+            {aiOutcome.calls} API call{aiOutcome.calls === 1 ? '' : 's'} · {aiOutcome.repairs}{' '}
+            repair{aiOutcome.repairs === 1 ? '' : 's'}
+            {aiOutcome.spentUsd !== null ? ` · this run cost ${formatUsd(aiOutcome.spentUsd)}` : ''}
+          </div>
+        )}
       </div>
 
-      {ledger && <LedgerPanel ledger={ledger} blocked={blocked} onRestore={onRestore} />}
+      {ledger && (
+        <LedgerPanel
+          ledger={ledger}
+          blocked={blocked}
+          onRestore={onRestore}
+          verdicts={aiOutcome?.verdicts}
+        />
+      )}
 
       {run && !aiMode && (
         <DiffView
@@ -504,5 +659,23 @@ export function App() {
 
       <div class={`copy-success${copied ? ' show' : ''}`}>✓ Copied to clipboard!</div>
     </>
+  );
+}
+
+/**
+ * What the run actually cost, from the token usage the providers reported.
+ * The verifier runs on a different model, but its share is a rounding error
+ * next to the compression call, so the compression model's rate is used for
+ * the whole run rather than pretending to a precision we do not have.
+ */
+function spentUsd(
+  usage: { inputTokens: number; outputTokens: number },
+  compressModelId: string,
+): number | null {
+  const model = getModel(compressModelId);
+  if (!model || (usage.inputTokens === 0 && usage.outputTokens === 0)) return null;
+  return (
+    costForTokens(usage.inputTokens, model.input_per_mtok) +
+    costForTokens(usage.outputTokens, model.output_per_mtok)
   );
 }

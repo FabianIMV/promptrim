@@ -355,6 +355,117 @@
       margin-top: 10px;
     }
 
+    /* AI MODE */
+    .ai-panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-top: 12px;
+    }
+
+    .ai-panel-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin: 0 0 12px;
+      color: var(--text);
+    }
+
+    .ai-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+
+    .ai-key-field { flex: 1 1 260px; }
+
+    .ai-key-field input {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-size: 0.85rem;
+      font-family: monospace;
+      outline: none;
+      width: 100%;
+    }
+
+    .ai-key-field input:focus { border-color: var(--accent); }
+
+    .ai-remember {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      cursor: pointer;
+      padding-bottom: 8px;
+    }
+
+    .ai-remember input[type="checkbox"] {
+      accent-color: var(--accent);
+      width: 16px; height: 16px;
+    }
+
+    .ai-estimate {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin: 0;
+      padding: 10px 12px;
+      background: var(--surface2);
+      border-radius: 8px;
+    }
+
+    .ai-estimate strong { color: var(--accent-light); }
+
+    .ai-steps {
+      list-style: none;
+      margin: 12px 0 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .ai-step {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      background: var(--surface2);
+      border-radius: 8px;
+      padding: 7px 10px;
+    }
+
+    .ai-step-mark { flex: 0 0 auto; }
+    .ai-step.done .ai-step-mark { color: var(--green); }
+    .ai-step.failed .ai-step-mark { color: var(--red); }
+    .ai-step.running .ai-step-mark { color: var(--accent-light); }
+
+    .ai-step-name {
+      flex: 0 0 70px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .ai-step-detail { flex: 1 1 auto; }
+
+    .ledger-evidence,
+    .ledger-dispute {
+      display: block;
+      margin-top: 4px;
+      font-size: 0.75rem;
+      font-style: normal;
+      color: var(--text-muted);
+    }
+
+    .ledger-dispute { color: var(--accent-light); }
+
     /* PANELS */
     .panels {
       display: grid;
@@ -1087,13 +1198,13 @@
       </div>
       <div class="step">
         <div class="step-icon">🤖</div>
-        <h3>AI Mode (Gemini)</h3>
-        <p>Uses Gemini to intelligently rewrite your prompt. Preserves semantic meaning while achieving up to 70% token reduction.</p>
+        <h3>AI Mode (Anthropic · OpenAI · Gemini)</h3>
+        <p>Your model rewrites the prompt, a second model audits the result against every constraint, and lost ones are repaired automatically. Bring your own key.</p>
       </div>
       <div class="step">
         <div class="step-icon">📊</div>
         <h3>Token Analytics</h3>
-        <p>See exact token counts before and after. Estimate how much you save on GPT-4o, Claude, and Gemini API calls.</p>
+        <p>See exact token counts before and after, and what each API call costs — including the compression call itself, priced before you run it.</p>
       </div>
       <div class="step">
         <div class="step-icon">🔒</div>
@@ -1112,7 +1223,7 @@
     </div>
     <div class="faq-item">
       <div class="faq-q">Is my data private?</div>
-      <div class="faq-a">In Fast Mode, compression happens 100% in your browser — nothing leaves your device. In AI Mode, your prompt is sent directly from your browser to Google's Gemini API using your own API key. We never see your prompts or keys.</div>
+      <div class="faq-a">In Fast Mode, compression happens 100% in your browser — nothing leaves your device. In AI Mode, your prompt is sent directly from your browser to the provider you pick (Anthropic, OpenAI or Google) using your own API key. The key stays in memory unless you tick &ldquo;Remember in this browser&rdquo;, which stores it in <code>sessionStorage</code> until you close the tab. We never see your prompts or keys.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">How much can I save?</div>
