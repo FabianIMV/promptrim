@@ -8,8 +8,8 @@
   <meta name="google-site-verification" content="kE_5YEb4xEOwuTZBkoJ93CoKsHERbRQzfJTvptiqZOs" />
 
   <!-- Primary SEO -->
-  <title>PromptTrim – Free AI Prompt Compressor | Save Tokens & Cut AI Costs</title>
-  <meta name="description" content="Compress your AI prompts instantly. PromptTrim reduces ChatGPT, Claude & Gemini prompt tokens by up to 70% while preserving meaning. Free tool, no signup required." />
+  <title>PromptTrim – The Prompt Compressor That Proves It Didn't Break Your Prompt</title>
+  <meta name="description" content="Compress ChatGPT, Claude & Gemini prompts locally in your browser. Code, strings and variables are never touched, and a constraint checklist proves nothing else was lost. Real, reproducible benchmark — free, no signup." />
   <meta name="keywords" content="prompt compressor, token reducer, AI prompt optimizer, save tokens, reduce AI costs, ChatGPT prompt compressor, Claude prompt optimizer, prompt compression tool" />
   <meta name="author" content="PromptTrim" />
   <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -22,15 +22,15 @@
   <!-- Open Graph -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://fabianimv.github.io/promptrim/" />
-  <meta property="og:title" content="PromptTrim – Free AI Prompt Compressor" />
-  <meta property="og:description" content="Reduce AI prompt tokens by up to 70% instantly. Works with ChatGPT, Claude, Gemini and any LLM. Free, no signup." />
+  <meta property="og:title" content="PromptTrim – The Prompt Compressor That Proves It Didn't Break Your Prompt" />
+  <meta property="og:description" content="Code, strings and variables are never touched. A constraint checklist proves nothing else was lost. Works with ChatGPT, Claude, Gemini and any LLM. Free, no signup." />
   <meta property="og:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
   <meta property="og:locale" content="en_US" />
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="PromptTrim – Free AI Prompt Compressor" />
-  <meta name="twitter:description" content="Reduce AI prompt tokens by up to 70%. Free tool for ChatGPT, Claude & Gemini users." />
+  <meta name="twitter:title" content="PromptTrim – The Prompt Compressor That Proves It Didn't Break Your Prompt" />
+  <meta name="twitter:description" content="Code, strings and variables are never touched. A constraint checklist proves nothing else was lost. Free tool for ChatGPT, Claude & Gemini users." />
   <meta name="twitter:image" content="https://fabianimv.github.io/promptrim/og-image.png" />
 
   <!-- Geo targeting -->
@@ -49,7 +49,7 @@
     "@type": "WebApplication",
     "name": "PromptTrim",
     "url": "https://fabianimv.github.io/promptrim/",
-    "description": "Free AI prompt compressor. Reduce tokens in your ChatGPT, Claude, and Gemini prompts by up to 70% while preserving meaning.",
+    "description": "Free AI prompt compressor for ChatGPT, Claude and Gemini. Protected regions and a constraint ledger prove instructions, code and variables survive compression — verified by a public, reproducible benchmark.",
     "applicationCategory": "UtilityApplication",
     "operatingSystem": "Any",
     "offers": {
@@ -1398,20 +1398,21 @@
   </header>
 
   <section class="hero">
-    <h1>Compress AI Prompts.<br/>Cut Token Costs.</h1>
-    <p>Paste any prompt, get a leaner version that preserves all the meaning. Works with ChatGPT, Claude, Gemini, and any LLM.</p>
+    <h1>The prompt compressor<br/>that proves it didn't break your prompt.</h1>
+    <p>Code, quoted strings, URLs and template variables are never touched — by construction, not by luck. Every compression comes with a checklist showing exactly which instructions survived. Works with ChatGPT, Claude, Gemini, and any LLM.</p>
     <div class="hero-actions">
+      <a class="hero-link" href="#benchmark">📊 See the real numbers</a>
       <a class="hero-link" href="https://github.com/FabianIMV/promptrim/stargazers" target="_blank" rel="noopener noreferrer">🌟 Support the project</a>
       <a class="hero-link" href="https://github.com/FabianIMV/promptrim" target="_blank" rel="noopener noreferrer">💻 View source code</a>
     </div>
     <div class="stats">
       <div class="stat">
-        <div class="stat-num">Free</div>
-        <div class="stat-label">no signup needed</div>
+        <div class="stat-num">0 backend</div>
+        <div class="stat-label">Fast mode never leaves your browser</div>
       </div>
       <div class="stat">
-        <div class="stat-num">AI</div>
-        <div class="stat-label">powered compression</div>
+        <div class="stat-num">Verified</div>
+        <div class="stat-label">constraint checklist, not a promise</div>
       </div>
     </div>
   </section>
@@ -1477,6 +1478,44 @@
 </tbody></table></div>
 <p class="advisor-sub">AI mode not measured for: Anthropic, OpenAI, Google Gemini. No percentage is published for a provider that was not actually called.</p>
 <!-- BENCHMARK:LANDING:END -->
+    </div>
+  </section>
+
+  <!-- What PromptTrim does NOT do -->
+  <section class="how" id="not">
+    <h2>What PromptTrim does NOT do</h2>
+    <p class="how-sub">Honesty as a feature, not a disclaimer. Every point below is a real, current limit of this exact codebase.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not touch protected regions</h3>
+        <p>Code fences, inline code, quoted strings, URLs, template variables and few-shot examples are structurally excluded from every rule — not "usually skipped," never even offered to a rule as a candidate.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not delete instruction words</h3>
+        <p>"never", "always", "must", "only", "step by step" and anything like them are never removed, at any level. <code>src/core/rules/discarded.ts</code> lists every rule from the old app that did this, and why it was cut.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not prove full meaning is preserved</h3>
+        <p>The ledger verifies that specific constraints (prohibitions, formats, numbers, quoted literals, variables) survive — not that the compressed prompt reads identically to a human. Review Aggressive output before shipping it.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not send Fast mode prompts anywhere</h3>
+        <p>There is no backend. Fast mode compresses in your browser tab and nothing leaves it. AI mode goes straight from your browser to the provider you pick, with your own key — never through a PromptTrim server, because none exists.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not check requirements in every language yet</h3>
+        <p>The constraint ledger's prohibition/requirement/format detection is English-only today. A prompt in Spanish or another language still gets the protected-region safety net, but not that checklist — this is tracked, not hidden.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🚫</div>
+        <h3>Does not run batch prompts through AI mode</h3>
+        <p>Batch mode (several prompts separated by <code>---</code>) is Fast mode only. Firing an unbounded number of paid API calls from one click is not a default anyone should get by accident.</p>
+      </div>
     </div>
   </section>
 
