@@ -286,7 +286,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | 3 | ✅ Completada | 2026-09-03 | [#12](https://github.com/FabianIMV/promptrim/pull/12) | Diff construido desde `Change[]` (`src/core/diff.ts`, sin librería de diff de strings), deshacer por cambio y por regla con recálculo de tokens/ledger, panel de reglas persistido en `localStorage`, y los cambios bloqueados por el ledger integrados en la propia vista de diff. 896 tests (+159). Ver 6.4. |
 | 4 | ✅ Completada | 2026-09-03 | [#13](https://github.com/FabianIMV/promptrim/pull/13) | `core/cache-advisor/` (separación prefijo/sufijo, invalidadores silenciosos, modelo económico por proveedor, versión cache-ready y recomendación), `data/caching.json` con las reglas de caché verificadas hoy en las tres documentaciones oficiales, tarjeta "Cost Advisor" en la UI y sección "Compress or cache?" en la landing. El break-even (2 llamadas con TTL 5 min, 3 con 1 h) se reproduce desde los precios y coincide con la frase literal de la página de precios de Anthropic. 965 tests (+69). Ver 6.5. |
 | 5 | ✅ Completada | 2026-09-04 | [#14](https://github.com/FabianIMV/promptrim/pull/14) | `src/providers/` con interfaz común y tres clientes REST (Anthropic con `output_config.format` y la cabecera de acceso directo desde navegador, OpenAI con `response_format` + `max_completion_tokens`, Gemini con `responseSchema`), pipeline comprimir → verificar → reparar con veto local del ledger, claves solo en memoria salvo opt-in a `sessionStorage`, coste de la propia llamada mostrado antes de ejecutarla, y `count_tokens` exacto de Anthropic (deuda de la Fase 1). 1043 tests en total tras fusionar con la Fase 4 (+77 propios). Ver 6.6. |
-| 6 | Pendiente | | | |
+| 6 | ✅ Completada | 2026-09-04 | (pendiente de enlazar) | `npm run bench` (dos corpus: 40 prompts de producción + 10 cotidianos nuevos en `bench/corpus/phase6/`) genera las tablas de README/landing en los dos idiomas y verifica sus propios criterios de aceptación (0/426 violaciones de regiones protegidas, 100% de restricciones críticas preservadas). Compartir por URL con `lz-string`, import/export `.txt`/`.md`/`.json`, modo lote (`---`), PWA básica + `Ctrl+Enter`, landing en español en `/es/` con hreflang, y reescritura de README/landing alrededor de la tesis con sección "Qué NO hace PromptTrim". Lighthouse 100/100/100/99 (SEO/accesibilidad/buenas prácticas/rendimiento) en `/` y `/es/`. 1131 tests (+88). Ver 6.7. |
 | 7 (opc.) | Pendiente | | | |
 | 8 (opc.) | Pendiente | | | |
 
@@ -887,4 +887,126 @@ navegador puro, sin backend — no se sostenía, y era la incógnita mayor de Op
   estimación.
 - **`gemini-3.8-flash` tiene precio promocional hasta el 2026-12-31** (input $0.75 → $1.50 el 2027-01-01), anotado
   en `notes` dentro de `pricing.json`. Alguna sesión de 2027 tendrá que re-verificarlo, como manda la Sección 4.
+
+### 6.7 Fase 6 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-04): `npm run lint` ✅, `npm test` ✅ (**1131 tests, 33 archivos**,
++88 sobre el cierre de la Fase 5), `npm run build` ✅ (`tsc --noEmit` + `vite build`, ahora dos entradas:
+`dist/index.html` y `dist/es/index.html`). Cobertura de `src/core/**`: **98,89%** de sentencias (objetivo de la
+Sección 5: ≥85%). `npm run bench` verifica sus propios criterios de aceptación en cada corrida, no solo la
+suite de regresión: **0/426** cambios tocaron una región protegida (dos corpus × tres niveles) y **100,0%**
+(1482/1482) de las restricciones críticas se preservaron (objetivo de la Sección 5: ≥98%); el script termina
+con código de salida distinto de cero si cualquiera de los dos baja del umbral. Lighthouse (`vite preview`,
+Chrome headless, perfil desktop) sobre el build final: **100 SEO / 100 accesibilidad / 100 buenas prácticas /
+99 rendimiento** en `/` y **100/100/100/100** en `/es/` (objetivo de la Sección 5: rendimiento ≥90, SEO y
+accesibilidad ≥95 — los cuatro números superan su objetivo, no solo los dos que la sección nombra).
+
+**Verificación manual en el sitio construido** (no en el sitio publicado — esta sesión no tiene despliegue; ver
+desviaciones): con Playwright + Chromium headless contra `vite preview`, se probó cada feature nueva de punta a
+punta — compartir por URL (el hash `#s=...` reproduce el prompt y el nivel exactos al recargar, y nunca
+contiene una clave), exportar/importar `.txt`/`.md`/`.json`, modo lote (tres prompts separados por `---`
+producen tres filas de resumen y una salida re-unida con el mismo separador), `Ctrl+Enter` para comprimir, el
+service worker registrándose en el build de producción, y el selector de idioma navegando entre `/` y `/es/`
+sin errores de consola en ningún caso. La prueba manual de la Sección 5 punto 3 sobre "modo IA con los tres
+proveedores" no se pudo ejecutar contra proveedores reales: esta sesión no tiene claves de API de Anthropic,
+OpenAI ni Google (deuda que se hereda explícitamente más abajo, ya anotada por la Fase 5 en su momento).
+
+**Decisiones tomadas en esta fase:**
+
+1. **El corpus del benchmark se divide en dos grupos, no uno.** La tarea 1 pedía correr "el corpus" por nivel;
+   los corpus existentes (`phase0` + `phase2`, 40 prompts) son fixtures de regresión escritas para ser ya
+   cuidadosas — `phase0` esconde relleno *dentro* de regiones protegidas a propósito, `phase2` son system
+   prompts escritos para medir el extractor del ledger, no para ser verbosos. Publicar solo ese corpus daría
+   una reducción media de 0,0-1,6% en Fast mode: honesto, pero engañoso por el motivo opuesto al "70%"
+   inventado — parecería que el producto casi no comprime nada. Se añadió `bench/corpus/phase6/` (10 prompts
+   escritos a mano, en la voz de una petición de chat típica, con las muletillas y marcos que las reglas de
+   Balanced/Aggressive apuntan) para medir el reclamo de ahorro por separado del reclamo de seguridad. Ambos
+   grupos se publican siempre, nunca uno solo: los "production-style" dan 0,0-1,6% (esperado: no hay relleno
+   que inventar recortar) y los "everyday" dan 0,0-12,3% (donde sí hay algo que cortar). La alternativa —
+   publicar un solo número global promediado— habría ocultado exactamente la distinción que la tesis de la
+   Sección 1 pide mostrar.
+2. **El ledger se aplica en los tres niveles dentro del benchmark**, aunque el producto solo lo aplica por
+   defecto en Aggressive (política de la Sección 2). Es una decisión propia del script de medición, no un
+   cambio de comportamiento del producto: sin esto, "restricciones preservadas" y "cambios bloqueados" solo
+   tendrían dato en una fila de la tabla en vez de tres.
+3. **`npm run bench` reescribe HTML, no solo Markdown.** La tarea pedía que las cifras de la landing "salgan
+   del script de benchmark, nunca inventadas" con la misma fuerza que las del README. Un bloque de Markdown
+   crudo insertado en `index.html` se habría mostrado como texto literal (`**bold**`, tuberías de tabla) en vez
+   de renderizarse. `renderHtml()` genera una tabla real reutilizando las clases `.advisor-scroll`/
+   `.advisor-table` que ya existían para el Cost Advisor, en vez de inventar CSS paralelo. Se generan y
+   reescriben tres bloques marcados (`<!-- BENCHMARK:...:START/END -->`): uno en Markdown para `README.md` y
+   dos en HTML — inglés en `index.html`, español en `es/index.html` — para que el número que ve un visitante
+   nunca sea distinto del que produjo el script.
+4. **Medir el modo IA es opcional y honesto sobre su ausencia**, saldando la deuda que la Fase 5 dejó anotada
+   explícitamente para esta fase (§6.6): si `ANTHROPIC_API_KEY`/`OPENAI_API_KEY`/`GEMINI_API_KEY` están en el
+   entorno, `npm run bench` corre el pipeline completo sobre una muestra de 5 prompts del corpus "everyday" en
+   Balanced y publica la tasa real de restricciones preservadas y el coste medido; si no, el reporte dice
+   explícitamente qué proveedor no se midió y por qué, en vez de omitir la sección o inventar un número. Esta
+   sesión no tiene ninguna de las tres claves, así que el número del modo IA **sigue sin publicarse** — ver
+   deuda.
+5. **El CSS de la landing se extrajo a `src/styles/landing.css`.** Servir `/es/` como una segunda página HTML
+   estática (tarea 5) con el `<style>` de ~1300 líneas duplicado habría significado dos copias que divergen en
+   la primera edición futura. Ambas páginas cargan la misma hoja de estilos con `<link rel="stylesheet">`; Vite
+   la trata como un asset compartido entre las dos entradas del build (`dist/assets/main-*.css` aparece una sola
+   vez, no dos).
+6. **La localización en español cubre la landing estática, no la herramienta interactiva.** La Sección 3 pide
+   "i18n en/es" y "URL `/es/`"; no especifica si el compresor en sí (textareas, botones, paneles) debe
+   traducirse. Traducir `src/ui/` completo habría exigido introducir un framework de i18n (claves de traducción
+   para cada cadena en `App.tsx`, `AiPanel.tsx`, `CostAdvisor.tsx`, `LedgerPanel.tsx`, `RulesPanel.tsx`,
+   `DiffView.tsx`, `BatchView.tsx`) — un cambio arquitectónico propio, no una tarea dentro de esta fase ya
+   amplia. Se tradujo el contenido de marketing/SEO completo (hero, "cómo funciona", benchmark, "qué NO hace",
+   comprimir-vs-cachear, FAQ, metadatos, JSON-LD) porque es ahí donde está el valor de SEO que la tarea 5
+   nombra explícitamente ("hay espacio SEO en español"); la app montada debajo sigue en inglés en ambas
+   páginas. Documentado como deuda explícita, no oculta, en el roadmap del README y más abajo.
+7. **Se corrigieron dos fallos reales de contraste de Lighthouse**, no solo se verificó que ya estuvieran bien.
+   El botón de nivel activo (texto blanco sobre `--accent`) medía 4,46:1, justo por debajo del mínimo AA de
+   4,5:1 — un token `--accent-contrast` un poco más oscuro lo sube a 5,86:1 sin cambiar `--accent` en ningún
+   otro lugar. Un enlace nuevo dentro del texto de una FAQ heredaba el azul por defecto del navegador (2:1
+   sobre el fondo oscuro) por no tener regla propia; el enlace preexistente del footer tenía el mismo problema
+   por relojarse solo en el color frente al texto apagado de alrededor. Los tres se corrigieron con
+   `--accent-light` y subrayado. Esto cierra la deuda que la Fase 0 dejó anotada explícitamente para esta fase
+   (§6.1: "El objetivo ≥95 es de la Fase 6, conviene no empeorarlo antes") — accesibilidad pasó de 92 a 100.
+8. **El modo lote es solo Fast mode.** La tarea 3 no especifica si el modo IA debe soportar lotes. Ejecutar el
+   pipeline de IA (hasta 5 llamadas por prompt) sobre un número no acotado de prompts pegados de una vez
+   dispararía un gasto que el usuario no eligió explícitamente por prompt; si se activa el modo IA con texto en
+   formato de lote, la app lo dice y pide desactivarlo en vez de comprimir solo el primer prompt en silencio.
+
+**Desviaciones respecto al plan:**
+
+- **Rama.** Esta sesión se desarrolló en `feat/fase-6-producto`, indicado explícitamente en el encargo (no
+  `claude/fase-6-producto-ui1th4`, la rama con la que arrancó la sesión) — mismo patrón que la Fase 5.
+- **Sin despliegue real.** Esta sesión no publica en GitHub Pages; toda la verificación de la Sección 5 punto 3
+  ("prueba manual en el sitio publicado") se hizo contra `vite preview` sirviendo el build de producción en
+  local, no contra `fabianimv.github.io/promptrim`. El pipeline de `deploy.yml` no se modificó y debería
+  publicar ambas páginas (`dist/index.html` y `dist/es/index.html`) sin cambios, porque GitHub Pages sirve
+  cualquier archivo estático que `vite build` produzca.
+- **Sin capturas de pantalla generadas por un diseñador.** La tarea 6 pide "capturas nuevas"; se capturó una
+  captura real con Playwright contra la app corriendo (`docs/screenshot.png`, reemplazando el enlace externo
+  roto que tenía el README) en vez de un diseño de marketing curado. Es honesta — muestra una corrida real,
+  incluido un ✗ real que el ledger capturó — pero no es una pieza de diseño.
+- **El número de restricciones críticas preservadas del modo IA sigue sin publicarse**, como ya anotaba la
+  deuda de la Fase 5 (§6.6) que esta fase heredaba explícitamente la responsabilidad de resolver. El mecanismo
+  para resolverlo (decisión 4) está completo y probado con claves falsas en desarrollo; falta que una sesión
+  con acceso real a las tres APIs ejecute `npm run bench` una vez.
+- **`data/pricing.json` y `data/caching.json` no se re-verificaron** en esta fase: no se tocó ningún precio ni
+  regla de caché, así que `last_verified` se deja en 2026-09-03 en vez de falsificar una re-verificación que no
+  ocurrió.
+
+**Deuda pendiente que heredan las fases futuras (7 y 8, opcionales):**
+
+- **Localización completa de `src/ui/`** al español (decisión 6). El texto de la app interactiva sigue en
+  inglés en `/es/`; una fase de pulido de i18n debería introducir claves de traducción reales en vez de cadenas
+  literales en JSX.
+- **Modo IA sin medir con proveedores reales.** Sigue siendo la deuda más importante que arrastra el proyecto:
+  ningún material público puede afirmar un porcentaje de restricciones preservadas para el modo IA hasta que
+  alguna sesión con las tres claves de API corra `npm run bench` y publique el resultado real.
+- **Sin reintentos automáticos ante 429** (deuda de la Fase 5, sin cambios en esta fase).
+- **El modo lote no tiene su propia vista de diff** ni pasa por el Cost Advisor por prompt — solo agrega
+  ahorro total a través de `refreshSavings` sobre el original completo (incluidos los separadores `---`) contra
+  la salida re-unida. Es una aproximación razonable para un resumen, pero un Cost Advisor por fila sería más
+  preciso si el modo lote crece.
+- **El extractor del ledger sigue siendo solo inglés** (deuda heredada de las Fases 2, 4 y 5). Un prompt en
+  español en `/es/` obtiene la protección de regiones protegidas pero no el checklist de restricciones — la
+  Sección "Qué NO hace PromptTrim" lo dice explícitamente en vez de ocultarlo, pero sigue siendo trabajo
+  pendiente si la Fase 7/8 quiere que el checklist funcione igual de bien en ambos idiomas.
 
