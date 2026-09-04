@@ -643,6 +643,25 @@ export function App() {
     countingKey,
   ]);
 
+  // Ctrl+Enter (⌘+Enter on macOS) compresses from anywhere on the page,
+  // including while typing in the textarea — the shortcut a chat/code editor
+  // user already expects for "send/run". The listener is attached once and
+  // reads `onCompress` through a ref rather than depending on it directly, so
+  // it does not detach and reattach on every keystroke (`onCompress` gets a
+  // new identity whenever `input` changes).
+  const onCompressRef = useRef(onCompress);
+  onCompressRef.current = onCompress;
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        void onCompressRef.current();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
   const onCopy = useCallback(async () => {
     if (!output) return;
     try {
@@ -921,7 +940,13 @@ export function App() {
       </div>
 
       <div class="actions">
-        <button class="btn btn-primary" type="button" disabled={busy} onClick={onCompress}>
+        <button
+          class="btn btn-primary"
+          type="button"
+          disabled={busy}
+          onClick={onCompress}
+          title="Ctrl+Enter (⌘+Enter on Mac)"
+        >
           {busy ? (
             <>
               <span class="spinner" /> Compressing…

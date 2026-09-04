@@ -30,4 +30,10 @@ export default tseslint.config(
     languageOptions: { globals: { ...globals.node } },
     rules: { 'no-console': 'off' },
   },
+  {
+    // Runs in the Service Worker global scope, not a window (no `document`,
+    // `localStorage`, ...) — `self`/`caches`/`fetch` come from `serviceworker`.
+    files: ['public/sw.js'],
+    languageOptions: { globals: { ...globals.serviceworker } },
+  },
 );
