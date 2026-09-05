@@ -21,3 +21,9 @@ _bench/corpus/phase6 — unengineered requests padded with the framing and hedge
 | Aggressive | 12.3% | 12.2% (2,426 → 2,129 tokens) | 100.0% (60/60) | 0 (0 prompts) |
 
 AI mode not measured for: Anthropic, OpenAI, Google Gemini. Set the matching API key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`) and re-run `npm run bench` to include it — no percentage is published for a provider that was not actually called.
+
+Local ML mode (TinyBERT via LLMLingua-2, real on-device inference), Balanced level, 3-prompt sample from the everyday corpus:
+
+| Critical constraints preserved | Protected-region violations |
+|---|---|
+| 25.0% (5/20) | 0/8 |

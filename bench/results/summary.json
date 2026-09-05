@@ -125,5 +125,13 @@
         "reason": "GEMINI_API_KEY not set"
       }
     ]
+  },
+  "localMl": {
+    "prompts": 3,
+    "criticalTotal": 20,
+    "criticalKept": 5,
+    "criticalPreservedPct": 25,
+    "protectedRegions": 8,
+    "protectedRegionViolations": 0
   }
 }

@@ -85,6 +85,12 @@ _bench/corpus/phase6 — unengineered requests padded with the framing and hedge
 | Aggressive | 12.3% | 12.2% (2,426 → 2,129 tokens) | 100.0% (60/60) | 0 (0 prompts) |
 
 AI mode not measured for: Anthropic, OpenAI, Google Gemini. Set the matching API key (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY`) and re-run `npm run bench` to include it — no percentage is published for a provider that was not actually called.
+
+Local ML mode (TinyBERT via LLMLingua-2, real on-device inference), Balanced level, 3-prompt sample from the everyday corpus:
+
+| Critical constraints preserved | Protected-region violations |
+|---|---|
+| 25.0% (5/20) | 0/8 |
 <!-- BENCHMARK:README:END -->
 
 Two corpora, on purpose: production-style system prompts are already terse,
@@ -118,6 +124,13 @@ Honesty as a feature, not a disclaimer:
   number of paid API calls.
 - **Does not retry automatically on a provider rate limit.** A 429 in AI mode
   is shown with a wait time; retrying — and spending again — is your call.
+- **Does not trust Local ML mode's output on its own.** LLMLingua-2 drops
+  tokens by statistical importance, not meaning — our own benchmark measured
+  it keeping only 25% of critical constraints unaided (see
+  [Benchmark](#benchmark)). It is marked **experimental** for exactly that
+  reason; the protected regions and Constraint Ledger it always runs through
+  are what make it usable at all, not a claim that the model itself is
+  reliable.
 
 ---
 
@@ -132,6 +145,13 @@ Rule-based, zero API calls, works offline after your first visit (it's a PWA).
 ### 🤖 AI Compression Mode
 Model-powered rewriting on Anthropic, OpenAI or Google — with a second model
 auditing the result and an automatic repair pass.
+
+### 🧪 Local ML Mode (experimental)
+A small on-device model (TinyBERT, LLMLingua-2) compresses entirely in your
+browser — no API key, nothing leaves your machine. Its output still goes
+through protected regions and the Constraint Ledger, which is what makes an
+unsupervised local model usable at all — see [How Local ML Mode
+Works](#how-local-ml-mode-works).
 
 ### ✅ Constraint Ledger
 A ✓/✗ checklist of every prohibition, format, number and literal, with
@@ -202,6 +222,38 @@ Before running, the app shows what the pipeline itself will cost.
 | Anthropic | Claude Opus 5, Sonnet 5, Haiku 4.5 | `claude-opus-5` | `claude-haiku-4-5` |
 | OpenAI | GPT-5.6 Sol, Terra, Luna | `gpt-5.6-sol` | `gpt-5.6-luna` |
 | Google | Gemini 3.8 Flash, 2.5 Pro, 2.5 Flash | `gemini-3.8-flash` | `gemini-2.5-flash` |
+
+---
+
+## How Local ML Mode Works
+
+Local ML mode runs [LLMLingua-2](https://llmlingua.com/llmlingua2.html) —
+Microsoft's token-classification compressor, ported to the browser by
+[llmlingua-2-js](https://github.com/atjsh/llmlingua-2-js) — entirely on your
+device via [Transformers.js](https://github.com/huggingface/transformers.js).
+No API key, no server call: the first run downloads a small model
+(TinyBERT, ~57 MB) once, your browser caches it, and every compression after
+that runs locally.
+
+Unlike AI mode, there is no verify-and-repair loop here — a local model call
+is on-device compute, not a cheap API round trip, and there is nothing an
+extra call could reason its way into fixing. Instead, task 2 of
+docs/PLAN.md Phase 8 sets the actual safety mechanism:
+
+1. **Protected regions first.** The prompt is segmented exactly like Fast
+   mode (`packages/core/src/segment.ts`); LLMLingua-2 only ever sees the plain-text
+   segments. Code, quoted strings, URLs and template variables are copied
+   through untouched, never passed to the model.
+2. **The Constraint Ledger, always.** LLMLingua-2 drops tokens by statistical
+   importance, with no notion of what it is destroying — it can, and does,
+   invert a prohibition by dropping the word "never". The same ledger that
+   verifies Fast and AI mode compression checks the result and shows every ✗,
+   with the manual **Restore** button from Phase 2 for anything lost.
+
+This is why the mode is labeled **experimental**: the [benchmark](#benchmark)
+measures the model preserving only a quarter of critical constraints on its
+own. The ledger is not a nice-to-have on top of Local ML mode — it is the
+only reason its output is usable at all.
 
 ---
 
@@ -352,6 +404,7 @@ This repository runs the action on itself
 - npm workspaces: the engine is `packages/core`, the CLI is `packages/cli`, the web app is the root
 - Compression engine as pure functions in `packages/core/src/` (no DOM), covered by Vitest
 - Anthropic, OpenAI and Gemini REST APIs (optional, browser-side, bring your own key)
+- `@atjsh/llmlingua-2` + `@huggingface/transformers` for Local ML mode (optional, lazy-loaded, experimental)
 - `lz-string` for the shareable-URL state, a service worker for offline Fast mode
 - GitHub Pages, built and deployed by GitHub Actions
 
@@ -389,6 +442,7 @@ Layout:
 | `packages/cli/src/` | The `promptrim check` binary: globbing, git deltas, the report renderers and the exit-code gates |
 | `action.yml` | The GitHub Action wrapping the CLI, with the sticky pull request comment |
 | `src/providers/` | Browser-side LLM providers (Anthropic, OpenAI, Gemini) and the compress → verify → repair pipeline |
+| `src/local-ml/` | Local ML mode (experimental): segment-aware LLMLingua-2 compression, always through the ledger |
 | `src/ui/` | Preact components mounted into the static SEO page |
 | `bench/run.ts` | The `npm run bench` script — see [Benchmark](#benchmark) |
 | `bench/corpus/` | Prompts used as regression fixtures and benchmark input |
@@ -405,7 +459,7 @@ Layout:
 - [ ] Full Spanish localization of the interactive tool (the landing page has an `/es/` version; the compressor UI itself is still English-only)
 - [x] CLI + GitHub Action — see [CLI and GitHub Action](#cli-and-github-action). Not published to npm yet
 - [ ] Publish `promptrim` to npm so `npx promptrim check` works without a clone
-- [ ] Optional local ML compression mode (LLMLingua-2, no API key) — see docs/PLAN.md Phase 8
+- [x] Optional local ML compression mode (LLMLingua-2, no API key) — see docs/PLAN.md Phase 8. Ships as **experimental**: the benchmark measures it preserving only 25% of critical constraints unaided, which is exactly why it always runs through the same protected regions and ledger as the other modes.
 
 ---
 
