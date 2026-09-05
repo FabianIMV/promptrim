@@ -1,0 +1,28 @@
+{
+  // CommonJS, for the same reason as `packages/core/tsconfig.build.json`:
+  // the only consumer is Node. `@promptrim/core` resolves through the
+  // workspace symlink to its built `dist/index.d.ts`, so core builds first
+  // (`npm run build:packages` orders them).
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "node16",
+    "moduleResolution": "node16",
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}

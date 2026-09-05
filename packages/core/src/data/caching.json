@@ -1,6 +1,6 @@
 {
   "last_verified": "2026-09-03",
-  "note": "Caching behaviour (minimum cacheable prefix, TTLs, refresh semantics, what is billed) read from each provider's official documentation on last_verified. Prices live in data/pricing.json. Do not edit a number here from memory — re-verify on docs_url first.",
+  "note": "Caching behaviour (minimum cacheable prefix, TTLs, refresh semantics, what is billed) read from each provider's official documentation on last_verified. Prices live in src/data/pricing.json. Do not edit a number here from memory — re-verify on docs_url first.",
   "providers": [
     {
       "provider": "anthropic",

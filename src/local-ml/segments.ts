@@ -1,4 +1,4 @@
-import { segment } from '../core';
+import { segment } from '@promptrim/core';
 
 /**
  * Segment-aware application of an ML compressor.

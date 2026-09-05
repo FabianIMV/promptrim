@@ -287,8 +287,8 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | 4 | ✅ Completada | 2026-09-03 | [#13](https://github.com/FabianIMV/promptrim/pull/13) | `core/cache-advisor/` (separación prefijo/sufijo, invalidadores silenciosos, modelo económico por proveedor, versión cache-ready y recomendación), `data/caching.json` con las reglas de caché verificadas hoy en las tres documentaciones oficiales, tarjeta "Cost Advisor" en la UI y sección "Compress or cache?" en la landing. El break-even (2 llamadas con TTL 5 min, 3 con 1 h) se reproduce desde los precios y coincide con la frase literal de la página de precios de Anthropic. 965 tests (+69). Ver 6.5. |
 | 5 | ✅ Completada | 2026-09-04 | [#14](https://github.com/FabianIMV/promptrim/pull/14) | `src/providers/` con interfaz común y tres clientes REST (Anthropic con `output_config.format` y la cabecera de acceso directo desde navegador, OpenAI con `response_format` + `max_completion_tokens`, Gemini con `responseSchema`), pipeline comprimir → verificar → reparar con veto local del ledger, claves solo en memoria salvo opt-in a `sessionStorage`, coste de la propia llamada mostrado antes de ejecutarla, y `count_tokens` exacto de Anthropic (deuda de la Fase 1). 1043 tests en total tras fusionar con la Fase 4 (+77 propios). Ver 6.6. |
 | 6 | ✅ Completada | 2026-09-04 | [#15](https://github.com/FabianIMV/promptrim/pull/15) | `npm run bench` (dos corpus: 40 prompts de producción + 10 cotidianos nuevos en `bench/corpus/phase6/`) genera las tablas de README/landing en los dos idiomas y verifica sus propios criterios de aceptación (0/426 violaciones de regiones protegidas, 100% de restricciones críticas preservadas). Compartir por URL con `lz-string`, import/export `.txt`/`.md`/`.json`, modo lote (`---`), PWA básica + `Ctrl+Enter`, landing en español en `/es/` con hreflang, y reescritura de README/landing alrededor de la tesis con sección "Qué NO hace PromptTrim". Lighthouse 100/100/100/99 (SEO/accesibilidad/buenas prácticas/rendimiento) en `/` y `/es/`. 1131 tests (+88). Ver 6.7. |
-| 7 (opc.) | Pendiente | | | |
-| 8 (opc.) | ✅ Completada | 2026-09-05 | [#17](https://github.com/FabianIMV/promptrim/pull/17) | `src/local-ml/` integra `@atjsh/llmlingua-2` (TinyBERT, ~57 MB, WASM/WebGPU en el navegador, lazy) como tercer modo "Local ML", cuya salida pasa siempre por las regiones protegidas (`compressProtectedAware`, segmento a segmento) y por el ledger local (`buildLedger`), con el mismo panel de verificación y botón "Restaurar" que Fast/AI mode. Marcado **experimental** en la UI con una insignia visible. Medido de verdad contra el modelo real (no simulado): 0/8 violaciones de regiones protegidas y **25,0% de restricciones críticas preservadas sin ayuda** sobre una muestra de 3 prompts — la cifra que demuestra por qué el ledger es imprescindible, no un adorno. 1165 tests (+34). Ver 6.8. |
+| 7 (opc.) | ✅ Completada | 2026-09-05 | [#16](https://github.com/FabianIMV/promptrim/pull/16) | Núcleo extraído a `packages/core` (`@promptrim/core`) como workspace npm sin tocar el comportamiento de la web (`npm run bench` reproduce las mismas cifras tras el movimiento), CLI `promptrim check` en `packages/cli` (presupuesto por archivo, delta contra un ref de git, instrucciones duplicadas y una compresión que solo se ofrece si el ledger la verifica; `--write` aplica únicamente esas), y Action compuesta (`action.yml`) que comenta en el PR con un comentario pegajoso y hace dogfooding sobre `bench/corpus` en `.github/workflows/promptrim.yml`. 1232 tests (+101). Ver 6.8. |
+| 8 (opc.) | ✅ Completada | 2026-09-05 | [#17](https://github.com/FabianIMV/promptrim/pull/17) | `src/local-ml/` integra `@atjsh/llmlingua-2` (TinyBERT, ~57 MB, WASM/WebGPU en el navegador, lazy) como tercer modo "Local ML", cuya salida pasa siempre por las regiones protegidas (`compressProtectedAware`, segmento a segmento) y por el ledger local (`buildLedger`), con el mismo panel de verificación y botón "Restaurar" que Fast/AI mode. Marcado **experimental** en la UI con una insignia visible. Medido de verdad contra el modelo real (no simulado): 0/8 violaciones de regiones protegidas y **25,0% de restricciones críticas preservadas sin ayuda** sobre una muestra de 3 prompts — la cifra que demuestra por qué el ledger es imprescindible, no un adorno. 1165 tests sobre la base de la Fase 6 (+34 propios; el total tras fusionar con la Fase 7 se recuenta en la verificación de 6.9). Ver 6.9. |
 
 ### 6.1 Fase 0 — decisiones, desviaciones y deuda
 
@@ -1009,22 +1009,150 @@ OpenAI ni Google (deuda que se hereda explícitamente más abajo, ya anotada por
   español en `/es/` obtiene la protección de regiones protegidas pero no el checklist de restricciones — la
   Sección "Qué NO hace PromptTrim" lo dice explícitamente en vez de ocultarlo, pero sigue siendo trabajo
   pendiente si la Fase 7/8 quiere que el checklist funcione igual de bien en ambos idiomas.
+### 6.8 Fase 7 — decisiones, desviaciones y deuda
 
-### 6.8 Fase 8 — decisiones, desviaciones y deuda
+**Verificación al cerrar la fase** (2026-09-05): `npm run lint` ✅ (ESLint + Prettier sobre el workspace
+entero, `packages/**` incluido), `npm test` ✅ (**1232 tests, 39 archivos**, +101 sobre el cierre de la
+Fase 6), `npm run build` ✅ — que ahora encadena `npm run build:packages` (`tsc` de `packages/core` y de
+`packages/cli`) antes de `tsc --noEmit` y `vite build`. Cobertura de sentencias: **98,90%** en
+`packages/core/src/**` (era 98,89% antes de mover el núcleo: el movimiento no cambió una sola línea
+ejecutable) y **98,21%** en `packages/cli/src/**`; objetivo de la Sección 5: ≥85%.
 
-**Verificación al cerrar la fase** (2026-09-05): `npm run lint` ✅, `npm test` ✅ (**1165 tests, 37 archivos,
-+34** sobre el cierre de la Fase 6), `npm run build` ✅ (`tsc --noEmit` + `vite build`). Bundle inicial:
-**44,68 kB gzip** (`main-*.js`, la entrada real que carga `index.html` sin `defer`/dinámico — el nombre del
-chunk cambia de `index-*.js` a `main-*.js` en esta fase porque Rollup reserva `index-*.js` para el chunk grande
-de Local ML, ver decisión 2) frente a **43,28 kB gzip** en el mismo punto de `main` antes de esta fase (medido
-reconstruyendo `origin/main` en un worktree aparte) — **+1,40 kB gzip**, el pegamento de `src/local-ml/`
-(`pipeline.ts`, `segments.ts`, `rate.ts`, `types.ts`, más el selector de modo y `LocalMlPanel` en la UI). Los
-paquetes pesados (`@atjsh/llmlingua-2`, `@huggingface/transformers`, el runtime de `js-tiktoken/lite` y las
-ranks de `o200k_base`) sólo se cargan con `import()` dinámico dentro de `engine.ts`, nunca en el bundle
-inicial: verificado leyendo `dist/index.html` (un único `<script type="module">`, ningún `modulepreload`) y
-confirmando que el chunk de 506,72 kB / 148,74 kB gzip que sí aparece en `dist/assets/` no está referenciado
-desde ningún HTML — solo se pide cuando `loadLocalMlEngine()` se ejecuta de verdad. El WASM de ONNX Runtime
-(23,5 MB) tampoco aparece en ningún HTML: lo pide `onnxruntime-web` por su cuenta, en tiempo de ejecución.
+**El núcleo se movió sin cambiar de comportamiento, y está comprobado.** `npm run bench` después de la
+extracción produce exactamente las mismas cifras que antes (0/426 violaciones de regiones protegidas,
+100,0% de restricciones críticas preservadas, 0,0-1,6% de reducción en el corpus de producción y
+0,0-12,3% en el cotidiano); el único cambio en `bench/results/` y en las tablas de README/landing es la
+fecha de generación. `vite build` sigue emitiendo las dos entradas (`dist/index.html`, `dist/es/index.html`)
+y el chunk perezoso de o200k sigue separado, con el mismo tamaño.
+
+**Verificación de la Action** (criterio de aceptación de la fase): los pasos de shell de `action.yml` se
+ejecutaron localmente contra este mismo repositorio, con `RUNNER_TEMP`, `GITHUB_OUTPUT` y
+`GITHUB_STEP_SUMMARY` simulados, sobre `bench/corpus/phase0|phase2|phase6/*.md` con la configuración exacta
+del workflow (`claude-opus-5`, `aggressive`, presupuesto 1200, 50 000 llamadas/día, `fail-on: budget`):
+52 archivos, `exit-code=0`, informe Markdown escrito y `jq -Rs` produciendo un cuerpo de comentario válido
+que empieza por el marcador pegajoso. La ruta de fallo también se probó (presupuesto 200 → código de salida
+1). **Y después, en un runner real:** el workflow `Prompt budget` corrió sobre el PR #16 de esta misma fase
+y terminó en verde, con `origin/main` resuelto como base y el comentario publicado por `github-actions[bot]`
+([#16 comment](https://github.com/FabianIMV/promptrim/pull/16#issuecomment-5549196322)) — los mismos 52
+archivos, 8676 tokens y las mismas dos instrucciones duplicadas que dio la simulación local. El criterio de
+aceptación de la fase ("la Action funciona sobre el propio repo, dogfooding sobre `bench/corpus`") queda
+cumplido sobre GitHub Actions, no solo en local.
+
+**Decisiones tomadas en esta fase:**
+
+1. **El paquete raíz pasa a llamarse `promptrim-workspace`; el CLI se queda con el nombre `promptrim`.**
+   Un workspace npm no puede tener dos paquetes con el mismo nombre, y el comando que la Sección 3
+   documenta es `npx promptrim check`. Renombrar la raíz (privada, nunca publicable) cuesta cero y deja el
+   nombre bueno donde tiene que estar; lo contrario habría obligado a documentar `npx @promptrim/cli`, que
+   no es lo que el plan promete.
+2. **La web y los tests consumen el *código fuente* de `packages/core`, no su `dist`.** `vite.config.ts` y
+   `tsconfig.json` alias `@promptrim/core` a `packages/core/src/index.ts`. Así `npm run dev` y `npm test`
+   siguen funcionando sin paso de compilación intermedio, el bundle del navegador se sigue tree-shakeando
+   desde TypeScript en vez de desde CommonJS emitido, y la cobertura sigue midiendo las fuentes reales. El
+   `dist` compilado existe para un único consumidor: el CLI de Node. Es la razón por la que "extraer el
+   núcleo" no rompió la web.
+3. **Los paquetes compilan a CommonJS.** Las fuentes importan sin extensión (`./compress`) e importan JSON
+   directamente; emitir ESM para Node habría exigido añadir `.js` a unos 150 especificadores relativos y
+   atributos de importación (`with { type: 'json' }`) a los dos imports de datos — un diff que toca todos
+   los archivos del núcleo, justo en la fase en la que hay que poder ver que el núcleo *no* cambió. El único
+   consumidor del `dist` es un CLI de Node, donde CommonJS no cuesta nada. Efecto colateral necesario: el
+   `import type { Tiktoken } from 'js-tiktoken/lite'` de nivel superior se cambió por inferencia desde el
+   `import()` dinámico, porque un type-import estático de un paquete ESM desde un módulo CommonJS exige un
+   atributo `resolution-mode` (TS1541); el `import()` resuelve solo a la entrada `.cjs`.
+4. **`data/pricing.json` y `data/caching.json` se mudan a `packages/core/src/data/`.** Un paquete tiene que
+   traer sus propios datos: dejarlos en la raíz del repositorio los habría dejado fuera de `files` y fuera
+   de `rootDir`, y el `dist` habría apuntado a un archivo que no existe en el paquete. Con `rootDir: src`
+   el emitido queda limpio (`dist/pricing.js` → `dist/data/pricing.json`). Es una desviación del árbol de la
+   Sección 2, anotada abajo.
+5. **El CLI tiene exactamente una dependencia en tiempo de ejecución: `@promptrim/core`.** El matcher de
+   globs y el parser de argumentos están escritos a mano (unas 180 líneas entre los dos, con 29 tests
+   propios) en vez de traer `minimatch` + una librería de argumentos. Meter un árbol de dependencias en el
+   CI de otra persona para resolver `prompts/**/*.md` sería exactamente el tipo de coste invisible que el
+   Cost Advisor existe para señalar. El subconjunto soportado es `**`, `*`, `?` y `{a,b}`; no hay clases de
+   caracteres ni negación (deuda anotada).
+6. **El ledger veta las sugerencias en los tres niveles, no solo en Aggressive.** El producto web deja
+   Light/Balanced sin veto porque hay una persona mirando el diff; en CI no hay nadie mirando, así que una
+   sugerencia que el CLI ofrece —y sobre todo una que `--write` aplica— pasa siempre por la verificación.
+   Mismo razonamiento que la decisión 2 de §6.7 para el benchmark. Una compresión que perdería una
+   restricción `critical` se reporta como retenida ("blocked by ledger"), nunca se aplica en silencio.
+7. **La tercera puerta de `--fail-on` es `duplicates`, no "compresión no verificada".** La primera versión
+   consideraba fallar cuando el ledger vetaba la compresión de un archivo; eso es información sobre el
+   prompt (no se puede comprimir sin perder algo), no un defecto que un autor pueda arreglar. Una
+   instrucción duplicada sí es accionable y es justo lo que el ejemplo de la tarea 3 nombra
+   ("3 instrucciones duplicadas detectadas"). Las puertas son `budget`, `regression` y `duplicates`, y por
+   defecto la Action no falla ninguna (`fail-on: none`): comenta.
+8. **Ningún paquete se publica en npm en esta fase.** `promptrim` no está registrado, así que documentar
+   `npx promptrim check` a secas sería una instrucción que devuelve 404 — el mismo tipo de afirmación no
+   verificada que la Sección 0 le reprocha a la app vieja. El README documenta la forma `npx` como la
+   interfaz que expondrá el paquete publicado y, al lado, la invocación que funciona hoy
+   (`npm run cli -- check …`, o la Action, que lo compila sola). Publicar queda como deuda explícita.
+9. **Un recuento estimado se marca con `~` en todas las salidas.** Sin `ANTHROPIC_API_KEY` / `GEMINI_API_KEY`
+   los modelos de Anthropic y Gemini se cuentan con el estimador calibrado, no con un tokenizador real; el
+   informe lo dice en una nota y antepone `~` a cada número afectado, en vez de presentar una estimación
+   como una medición. Con modelos de OpenAI el recuento es exacto y offline (`js-tiktoken`, `o200k_base`).
+10. **La Action mantiene un solo comentario por PR.** Lo localiza por el marcador `<!-- promptrim-report -->`
+    que escribe el propio renderizador de Markdown (hay un test que ata los dos) y lo edita en sitio, para
+    que una rama de diez commits no acumule diez informes. Además vuelca el mismo informe en el resumen del
+    job, trunca a 60 000 caracteres con nota visible antes de que la API lo rechace, y degrada a un
+    `::warning::` —no a un fallo— cuando el token es de solo lectura (PR desde un fork).
+
+**Desviaciones respecto al plan:**
+
+- **Rama.** Esta sesión se desarrolló en `feat/fase-7-cli`, la rama que indica la Sección 3 y que el encargo
+  repite (no `claude/fase-7-cli-complete-8aozc2`, la rama con la que arrancó la sesión) — mismo patrón que
+  las Fases 5 y 6.
+- **`data/` ya no está en la raíz del repositorio**, contra el árbol dibujado en la Sección 2 (decisión 4).
+  Todas las referencias en prosa (README, `index.html`, `es/index.html`, comentarios de código y tests) se
+  actualizaron a `packages/core/src/data/`; no queda ninguna ruta obsoleta.
+- **La Action se probó primero en local y después en un runner real.** La simulación de los pasos de shell
+  fue lo que permitió depurarla antes de abrir el PR; la corrida de GitHub Actions sobre el PR #16 es la que
+  cuenta como aceptación. Además de eso hay 12 tests que
+  atan `action.yml` y el workflow al CLI: que cada `--flag` que la Action pasa existe en la ayuda, que el
+  marcador del comentario coincide con el del renderizador, que el modelo y el nivel del workflow son
+  válidos, que sus globs encuentran archivos y que ningún archivo del corpus supera el presupuesto que el
+  propio workflow impone.
+- **`data/pricing.json` y `data/caching.json` no se re-verificaron**: esta fase no toca ningún precio ni
+  regla de caché, así que `last_verified` sigue en 2026-09-03 en vez de falsificar una re-verificación.
+- **`bench/results/`, README, `index.html` y `es/index.html` cambian solo en la fecha** de generación del
+  benchmark, por la corrida de comprobación post-extracción descrita arriba.
+
+**Deuda pendiente que hereda la Fase 8 (opcional) o una sesión de pulido:**
+
+- **Publicar `promptrim` en npm** para que `npx promptrim check` funcione sin clonar (decisión 8). Requiere
+  quitar `private: true` de los dos paquetes, decidir si `@promptrim/core` se publica por separado y añadir
+  un workflow de release.
+- **El CLI solo usa el modo rápido.** No ejecuta el pipeline de IA (comprimir → verificar → reparar) sobre
+  los archivos: eso gastaría dinero en cada PR sin que nadie lo haya elegido por archivo. Si alguna vez se
+  añade, debería ser opt-in explícito con presupuesto de gasto, no una bandera más.
+- **El CLI no expone el Cost Advisor.** Proyecta el coste mensual de los tokens de cada archivo, pero no
+  dice "no comprimas esto, cachéalo", que es el consejo más valioso de la Fase 4 justo para el tipo de
+  archivo que vive en `prompts/` y se ejecuta miles de veces al día.
+- **El matcher de globs no soporta clases de caracteres (`[0-9]`) ni negación** (decisión 5). Excluir un
+  `README.md` de un directorio de prompts hoy exige listar los patrones a mano.
+- **El extractor del ledger sigue siendo solo inglés** (deuda heredada de las Fases 2, 4, 5 y 6). En el CLI
+  esto se nota más: un repositorio con prompts en español obtiene presupuesto y delta de tokens, pero la
+  columna de duplicados y la verificación de la compresión quedan vacías.
+- **Modo IA sin medir con proveedores reales** y **localización completa de `src/ui/`**: sin cambios, siguen
+  como las dejó §6.7.
+
+### 6.9 Fase 8 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-05, ya fusionada con la Fase 7): `npm run lint` ✅, `npm test` ✅
+(**1266 tests, 43 archivos**), `npm run build` ✅ (`npm run build:packages` + `tsc --noEmit` + `vite build`).
+Antes de fusionar con la Fase 7, la rama de esta fase daba 1165 tests (+34 sobre el cierre de la Fase 6) y un
+bundle inicial de **44,68 kB gzip** (`main-*.js` — el nombre del chunk pasó de `index-*.js` a `main-*.js` en
+esta fase porque Rollup reserva `index-*.js` para el chunk grande de Local ML, ver decisión 2) frente a
+**43,28 kB gzip** en el mismo punto de `main` antes de esta fase (medido reconstruyendo `origin/main` en un
+worktree aparte) — **+1,40 kB gzip**, el pegamento de `src/local-ml/` (`pipeline.ts`, `segments.ts`,
+`rate.ts`, `types.ts`, más el selector de modo y `LocalMlPanel` en la UI). Tras fusionar con la Fase 7 el
+bundle inicial se mide exactamente igual, **44,68 kB gzip**: mover `core/` a `packages/core/` no cambió una
+sola línea del código que entra en ese chunk. Los paquetes pesados (`@atjsh/llmlingua-2`,
+`@huggingface/transformers`, el runtime de `js-tiktoken/lite` y las ranks de `o200k_base`) sólo se cargan con
+`import()` dinámico dentro de `engine.ts`, nunca en el bundle inicial: verificado leyendo `dist/index.html`
+(un único `<script type="module">`, ningún `modulepreload`) y confirmando que el chunk de 506,72 kB /
+148,74 kB gzip que sí aparece en `dist/assets/` no está referenciado desde ningún HTML — solo se pide cuando
+`loadLocalMlEngine()` se ejecuta de verdad. El WASM de ONNX Runtime (23,5 MB) tampoco aparece en ningún HTML:
+lo pide `onnxruntime-web` por su cuenta, en tiempo de ejecución.
 
 **Medido contra el modelo real, no simulado** (a diferencia del modo IA de la Fase 5, que sigue sin claves de
 proveedor en esta sesión): esta sesión sí tenía acceso de red a Hugging Face, así que en vez de simular
@@ -1118,6 +1246,25 @@ LLMLingua-2 con un compresor falso para el criterio de aceptación, se ejecutó 
 
 **Desviaciones respecto al plan:**
 
+- **Esta fase se desarrolló en paralelo con la Fase 7, no después.** Igual que le pasó a la Fase 5 con la
+  Fase 4 (§6.6), el PR de esta fase (#17) se abrió mientras el PR de la Fase 7 (#16, extracción del núcleo a
+  `packages/core`) todavía estaba en revisión, y la Fase 7 se fusionó a `main` primero. Al traer `main` a esta
+  rama con un merge (no un rebase, para no reescribir el historial ya publicado del PR), aparecieron tres
+  puntos de fricción, resueltos así:
+  - **Numeración de secciones.** Las dos fases reclamaron el número 6.8 (la Fase 7 llegó primero a `main` y
+    lo conserva); esta sección pasó a 6.9 — el mismo patrón que la Fase 4/5 dejaron documentado.
+  - **Los tres imports de `src/local-ml/*.ts` que apuntaban a `../core`** (`pipeline.ts`, `rate.ts`,
+    `segments.ts`) quedaron rotos porque la Fase 7 movió `src/core/` a `packages/core/src/` detrás del alias
+    `@promptrim/core`; se actualizaron los tres, igual que los cuatro tests de `test/local-ml-*.test.ts` que
+    importaban el barril completo (`../src/core` → `@promptrim/core`, el mismo alias que ya usan
+    `test/providers-*.test.ts` para imports de varios símbolos).
+  - **`package-lock.json` no se fusionó a mano** (los `workspaces` que añade la Fase 7 lo reescriben casi
+    entero): se tomó la versión de `origin/main` completa (`git checkout --theirs`) y se corrió `npm install`
+    encima para reinsertar `@atjsh/llmlingua-2` y `@huggingface/transformers` en el árbol de workspaces —
+    "added 2 packages, changed 52 packages", sin marcadores de conflicto ni reescritura manual de un archivo
+    generado. `npm run build`, `npm test` y `npm run lint` se volvieron a correr enteros después del merge
+    para confirmar que no quedó nada roto (1266 tests, el bundle inicial en el mismo 44,68 kB gzip de antes
+    del merge).
 - **Dependencias nuevas: `@atjsh/llmlingua-2` y `@huggingface/transformers`.** Es la única fase hasta ahora
   que añade paquetes a `dependencies` (todas las fases 1-6 lo señalaban explícitamente como algo que *no*
   hacían). `@huggingface/transformers` trae como dependencias opcionales `onnxruntime-node` y `sharp`, que
@@ -1140,7 +1287,8 @@ LLMLingua-2 con un compresor falso para el criterio de aceptación, se ejecutó 
   propia (no hay llamada de red a un proveedor de pago), así que no hay nada que verificar en esas fuentes en
   esta fase.
 
-**Deuda pendiente que heredan las fases futuras (7, opcional, y cualquier pulido posterior):**
+**Deuda pendiente que hereda cualquier sesión de pulido posterior** (la Fase 7 ya se completó en paralelo —
+ver 6.8 — y no depende de nada de esta lista):
 
 - **Los bordes de segmento no reparan mayúsculas ni espacios** (decisión 5). Si un segmento de texto termina o
   empieza a mitad de frase justo antes o después de una región protegida, LLMLingua-2 puede dejar una mayúscula
@@ -1159,4 +1307,3 @@ LLMLingua-2 con un compresor falso para el criterio de aceptación, se ejecutó 
 - **El extractor del ledger sigue siendo solo inglés** (deuda heredada de las Fases 2, 4, 5 y 6, sin cambios en
   esta fase): un prompt en español pierde el checklist de restricciones en los tres modos por igual, Local ML
   incluido.
-

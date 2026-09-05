@@ -1,6 +1,6 @@
 import { useMemo } from 'preact/hooks';
-import { buildDiffItems, changeKey, ruleById } from '../core';
-import type { BlockedChange, Change, DiffItem } from '../core';
+import { buildDiffItems, changeKey, ruleById } from '@promptrim/core';
+import type { BlockedChange, Change, DiffItem } from '@promptrim/core';
 
 interface Props {
   original: string;

@@ -4,7 +4,7 @@
  * that preaches token discipline should not spend five calls in silence.
  */
 import { describe, expect, it } from 'vitest';
-import { extractConstraints, getModel } from '../src/core';
+import { extractConstraints, getModel } from '@promptrim/core';
 import { estimateAiCost, formatUsd, MAX_CALLS, MIN_CALLS } from '../src/providers';
 
 const PROMPT = [

@@ -12,8 +12,8 @@
  * are what make the result usable, the same way they already are for a Fast
  * mode compression the ledger did not fully approve.
  */
-import { buildLedger, extractConstraints } from '../core';
-import type { Constraint, DuplicateGroup, Level, LedgerReport } from '../core';
+import { buildLedger, extractConstraints } from '@promptrim/core';
+import type { Constraint, DuplicateGroup, Level, LedgerReport } from '@promptrim/core';
 import { loadLocalMlEngine } from './engine';
 import { LEVEL_KEEP_RATE } from './rate';
 import { compressProtectedAware } from './segments';

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findProtectedRanges } from '../src/core';
+import { findProtectedRanges } from '@promptrim/core';
 import { runLocalMlCompression } from '../src/local-ml/pipeline';
 import type { LocalMlEngine } from '../src/local-ml/types';
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { LEVELS } from '../src/core';
+import { LEVELS } from '@promptrim/core';
 import { LEVEL_KEEP_RATE } from '../src/local-ml/rate';
 
 describe('LEVEL_KEEP_RATE', () => {

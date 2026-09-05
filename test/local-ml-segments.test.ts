@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { compressProtectedAware } from '../src/local-ml/segments';
-import { findProtectedRanges } from '../src/core';
+import { findProtectedRanges } from '@promptrim/core';
 
 describe('compressProtectedAware', () => {
   it('reproduces the input exactly when the compressor is the identity', async () => {

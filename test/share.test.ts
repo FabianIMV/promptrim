@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { compressToEncodedURIComponent } from 'lz-string';
-import { decodeShareState, encodeShareState } from '../src/core/share';
+import { decodeShareState, encodeShareState } from '../packages/core/src/share';
 
 describe('encodeShareState / decodeShareState', () => {
   it('round-trips a prompt and level through the hash', () => {

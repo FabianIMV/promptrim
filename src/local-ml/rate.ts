@@ -1,4 +1,4 @@
-import type { Level } from '../core';
+import type { Level } from '@promptrim/core';
 
 /**
  * LLMLingua-2's `rate` is the fraction of tokens to KEEP — the opposite

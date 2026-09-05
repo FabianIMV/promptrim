@@ -4,10 +4,10 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { buildCacheReady } from '../src/core/cache-advisor/cache-ready';
-import { splitPrompt } from '../src/core/cache-advisor/split';
-import { ttlsForModel } from '../src/core/cache-advisor/rules';
-import { getModel } from '../src/core/pricing';
+import { buildCacheReady } from '../packages/core/src/cache-advisor/cache-ready';
+import { splitPrompt } from '../packages/core/src/cache-advisor/split';
+import { ttlsForModel } from '../packages/core/src/cache-advisor/rules';
+import { getModel } from '../packages/core/src/pricing';
 
 const opus = getModel('claude-opus-5')!;
 const gpt5 = getModel('gpt-5')!;

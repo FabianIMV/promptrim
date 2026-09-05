@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildLedger, extractConstraints, verifyConstraints } from '../src/core/ledger';
+import { buildLedger, extractConstraints, verifyConstraints } from '../packages/core/src/ledger';
 
 function report(original: string, compressed: string) {
   return verifyConstraints(original, compressed, extractConstraints(original));

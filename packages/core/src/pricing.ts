@@ -1,9 +1,9 @@
 /**
- * Reads `data/pricing.json` — per-model prices verified on each provider's
+ * Reads `src/data/pricing.json` — per-model prices verified on each provider's
  * official pricing page, dated in `last_verified`. See that file's `note`
  * for the verification rule: never edit a number here from memory.
  */
-import pricingData from '../../data/pricing.json';
+import pricingData from './data/pricing.json';
 
 export type Provider = 'anthropic' | 'openai' | 'gemini';
 
@@ -57,7 +57,7 @@ export function cacheReadPricePerMtok(model: ModelPricing): number {
 
 /**
  * Price of writing the prefix into the cache, per million tokens, for the TTL
- * named by `ttlId` (see `data/caching.json`).
+ * named by `ttlId` (see `src/data/caching.json`).
  *
  * This is not a surcharge on top of a normal call: it is what those tokens cost
  * on the request that populates the cache. Anthropic charges 1.25x base for the

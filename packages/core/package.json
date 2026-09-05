@@ -1,0 +1,25 @@
+{
+  "name": "@promptrim/core",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "description": "PromptTrim's engine: protected regions, compression rules, the constraint ledger, tokenizers, pricing and the compress-vs-cache advisor. No DOM, no network except the providers' own token-count endpoints.",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "js-tiktoken": "^1.0.21",
+    "lz-string": "^1.5.0"
+  }
+}

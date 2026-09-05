@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { extractConstraints, CRITICAL_TYPES, severityFor } from '../src/core/ledger';
-import type { Constraint, ConstraintType } from '../src/core/ledger';
+import { extractConstraints, CRITICAL_TYPES, severityFor } from '../packages/core/src/ledger';
+import type { Constraint, ConstraintType } from '../packages/core/src/ledger';
 
 function anchors(text: string, type: ConstraintType): string[] {
   return extractConstraints(text)

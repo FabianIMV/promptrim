@@ -108,7 +108,7 @@ Honesty as a feature, not a disclaimer:
   variables and examples are structurally excluded from every rule.
 - **Does not delete instruction words.** "never", "always", "must", "only",
   "step by step" and anything like them are never removed, at any level —
-  see `src/core/rules/discarded.ts` for the legacy rules that did this and
+  see `packages/core/src/rules/discarded.ts` for the legacy rules that did this and
   were cut.
 - **Does not prove full meaning is preserved.** The ledger verifies specific
   constraints survive, not that a human would read the output as identical.
@@ -177,6 +177,11 @@ a per-prompt summary table.
 Light, Balanced, or Aggressive — Aggressive is the only one the ledger can
 veto a change on.
 
+### 🛠 CLI & GitHub Action
+`promptrim check` puts the same engine in CI: a token budget per file, the
+delta against your base branch, duplicated instructions, and a verified trim
+it can apply for you. See [CLI and GitHub Action](#cli-and-github-action).
+
 ### 🔒 Privacy First
 No backend, no prompt storage anywhere. Your API key never leaves your
 browser, and by default never leaves memory.
@@ -236,7 +241,7 @@ extra call could reason its way into fixing. Instead, task 2 of
 docs/PLAN.md Phase 8 sets the actual safety mechanism:
 
 1. **Protected regions first.** The prompt is segmented exactly like Fast
-   mode (`src/core/segment.ts`); LLMLingua-2 only ever sees the plain-text
+   mode (`packages/core/src/segment.ts`); LLMLingua-2 only ever sees the plain-text
    segments. Code, quoted strings, URLs and template variables are copied
    through untouched, never passed to the model.
 2. **The Constraint Ledger, always.** LLMLingua-2 drops tokens by statistical
@@ -281,10 +286,123 @@ If you do not provide a key, PromptTrim still works in Fast Mode (no API key nee
 
 ---
 
+## CLI and GitHub Action
+
+The engine is a workspace package (`packages/core`), so the code that runs in
+the browser is the code that runs in CI — no second implementation to keep in
+step. `packages/cli` wraps it in a `promptrim` binary and `action.yml` wraps
+that in a GitHub Action.
+
+Where a token linter reports, `promptrim check` also **offers a compressed
+version and proves it is safe**: a trim is suggested only when every
+`critical` constraint in the original still verifies against the compressed
+text, and `--write` applies only those. Anything the ledger vetoes is reported
+as withheld, never applied quietly.
+
+> **Not on npm yet.** Run it from a clone — `npm run cli -- check "prompts/**/*.md"`
+> — or through the Action, which builds it for you. The `npx promptrim` form
+> below is the interface the published package will expose.
+
+### `promptrim check`
+
+```bash
+npx promptrim check "prompts/**/*.md" --budget 2000 --model claude-opus-5
+```
+
+```
+PromptTrim check — 2 files
+claude-opus-5 · balanced · budget 2,000 · 1,000 calls/day · base main
+
+  prompts/system_prompt.md
+    ~2,640 tokens · $39.60/month · 2,100 → 2,640 vs base (+540, +26%)
+    budget    OVER by 640 tokens (limit 2,000)
+    trim      -312 tokens (-12%), $4.68/month
+    verified  14/14 critical constraints preserved, 1 change blocked by the ledger
+    dupes     3 duplicated instructions
+```
+
+| Flag | What it does |
+|------|--------------|
+| `--budget <n>` | Per-file token ceiling. Files above it are flagged. |
+| `--model <id>` | Tokenizer and price to use. Any id in [`packages/core/src/data/pricing.json`](./packages/core/src/data/pricing.json). Default `claude-sonnet-5`. |
+| `--level <level>` | `light`, `balanced` (default) or `aggressive` — which rule set the suggested trim comes from. |
+| `--base <ref>` / `--no-base` | Git ref the token delta is measured against. Default `main`; falls back to `origin/<ref>`. |
+| `--calls-per-day <n>` | Volume behind the monthly cost projection. Default 1,000. |
+| `--write` | Overwrite each file with its **verified** compressed version. Never touches a file whose trim the ledger vetoed. |
+| `--format <fmt>` | `text` (default), `markdown` (the PR comment body) or `json`. |
+| `--out <path>` | Also write the report to a file. |
+| `--fail-on <list>` | `budget`, `regression`, `duplicates`, or `none`. Default `budget`. |
+| `--cwd <dir>` | Run as if started in this directory. |
+
+Exit codes: `0` clean, `1` a gate in `--fail-on` tripped, `2` the invocation or
+the filesystem was wrong.
+
+Token counts are exact for OpenAI models (`js-tiktoken`, `o200k_base`) and for
+Anthropic and Gemini models when `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` are in
+the environment. Otherwise they are the calibrated estimate, and every
+estimated number is printed with a `~` rather than passed off as a
+measurement.
+
+### GitHub Action
+
+```yaml
+name: PromptTrim
+on: pull_request
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  prompts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0        # so the token delta has a base to compare with
+      - uses: FabianIMV/promptrim@main
+        with:
+          files: |
+            prompts/**/*.md
+          budget: '2000'
+          model: claude-opus-5
+          calls-per-day: '50000'
+          fail-on: budget
+```
+
+It posts one sticky comment per pull request (found by the
+`<!-- promptrim-report -->` marker and edited in place, so a ten-commit branch
+does not collect ten reports), writes the same report to the job summary, and
+fails the job only for the gates you listed in `fail-on` — the default is
+`none`, report-only.
+
+| Input | Default | |
+|-------|---------|--|
+| `files` | `prompts/**/*.md` | Glob patterns, one per line. Directories are scanned for `.md`, `.markdown`, `.txt`, `.prompt`. |
+| `budget` | *(none)* | Per-file token ceiling. |
+| `model` | `claude-sonnet-5` | Tokenizer and price. |
+| `level` | `balanced` | Level the suggested trim comes from. |
+| `base-ref` | the PR's base branch | `none` disables the comparison. |
+| `calls-per-day` | `1000` | Volume behind the cost projection. |
+| `fail-on` | `none` | `budget`, `regression`, `duplicates`, comma-separated. |
+| `comment` | `true` | Post/update the pull request comment. |
+| `working-directory` | `.` | Directory to run in. |
+| `node-version` | `22` | Node used to build and run the CLI. |
+| `github-token` | `github.token` | Needs `pull-requests: write` to comment. |
+
+Outputs: `exit-code` and `report-path`.
+
+This repository runs the action on itself
+([`.github/workflows/promptrim.yml`](./.github/workflows/promptrim.yml)) over
+`bench/corpus/`, so a break in the action fails a pull request here first.
+
+---
+
 ## Tech Stack
 
 - Vite + TypeScript + [Preact](https://preactjs.com/)
-- Compression engine as pure functions in `src/core/` (no DOM), covered by Vitest
+- npm workspaces: the engine is `packages/core`, the CLI is `packages/cli`, the web app is the root
+- Compression engine as pure functions in `packages/core/src/` (no DOM), covered by Vitest
 - Anthropic, OpenAI and Gemini REST APIs (optional, browser-side, bring your own key)
 - `@atjsh/llmlingua-2` + `@huggingface/transformers` for Local ML mode (optional, lazy-loaded, experimental)
 - `lz-string` for the shareable-URL state, a service worker for offline Fast mode
@@ -301,18 +419,28 @@ npm run lint    # ESLint + Prettier
 npm test        # Vitest
 npm run build   # type-check + production build into dist/
 npm run bench   # regenerate bench/results/ and the tables above
+npm run cli -- check "bench/corpus/phase6/*.md" --budget 400   # build + run the CLI
 ```
+
+`npm run build` builds the workspace packages first (`npm run build:packages`),
+then type-checks and builds the site. The web app and the tests import
+`@promptrim/core` through a Vite alias pointing at `packages/core/src`, so
+`npm run dev` and `npm test` need no package build in between; only the CLI
+consumes the emitted `packages/core/dist`.
 
 Layout:
 
 | Path | What lives there |
 |------|------------------|
-| `src/core/segment.ts` | Marks code, strings, URLs, JSON, tables, variables and examples as protected regions |
-| `src/core/rules/` | Compression rules, each with `id`, `level`, `lossy`, a readable "why" and its own test cases |
-| `src/core/compress.ts` | Applies rules outside protected regions and returns a list of `Change`s |
-| `src/core/ledger/` | Extracts, verifies and restores the constraint checklist |
-| `src/core/cache-advisor/` | Compress-vs-cache economics per provider |
-| `src/core/share.ts`, `src/core/transfer.ts`, `src/core/batch.ts` | Share-by-URL, `.txt`/`.md`/`.json` import-export, and `---`-separated batch mode |
+| `packages/core/src/segment.ts` | Marks code, strings, URLs, JSON, tables, variables and examples as protected regions |
+| `packages/core/src/rules/` | Compression rules, each with `id`, `level`, `lossy`, a readable "why" and its own test cases |
+| `packages/core/src/compress.ts` | Applies rules outside protected regions and returns a list of `Change`s |
+| `packages/core/src/ledger/` | Extracts, verifies and restores the constraint checklist |
+| `packages/core/src/cache-advisor/` | Compress-vs-cache economics per provider |
+| `packages/core/src/share.ts`, `transfer.ts`, `batch.ts` | Share-by-URL, `.txt`/`.md`/`.json` import-export, and `---`-separated batch mode |
+| `packages/core/src/data/` | `pricing.json` and `caching.json`, each with its `last_verified` date and source URL |
+| `packages/cli/src/` | The `promptrim check` binary: globbing, git deltas, the report renderers and the exit-code gates |
+| `action.yml` | The GitHub Action wrapping the CLI, with the sticky pull request comment |
 | `src/providers/` | Browser-side LLM providers (Anthropic, OpenAI, Gemini) and the compress → verify → repair pipeline |
 | `src/local-ml/` | Local ML mode (experimental): segment-aware LLMLingua-2 compression, always through the ledger |
 | `src/ui/` | Preact components mounted into the static SEO page |
@@ -320,7 +448,7 @@ Layout:
 | `bench/corpus/` | Prompts used as regression fixtures and benchmark input |
 | `docs/PLAN.md` | Phased plan and status table |
 
-`src/core/rules/discarded.ts` records the legacy rules that were deliberately
+`packages/core/src/rules/discarded.ts` records the legacy rules that were deliberately
 **not** ported (anything that deleted instructions such as "step by step",
 "ensure", "always" or whole sentences), with the reason for each.
 
@@ -329,7 +457,8 @@ Layout:
 ## Roadmap
 
 - [ ] Full Spanish localization of the interactive tool (the landing page has an `/es/` version; the compressor UI itself is still English-only)
-- [ ] CLI + GitHub Action (`npx promptrim check`) — see docs/PLAN.md Phase 7
+- [x] CLI + GitHub Action — see [CLI and GitHub Action](#cli-and-github-action). Not published to npm yet
+- [ ] Publish `promptrim` to npm so `npx promptrim check` works without a clone
 - [x] Optional local ML compression mode (LLMLingua-2, no API key) — see docs/PLAN.md Phase 8. Ships as **experimental**: the benchmark measures it preserving only 25% of critical constraints unaided, which is exactly why it always runs through the same protected regions and ledger as the other modes.
 
 ---

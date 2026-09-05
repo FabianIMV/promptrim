@@ -4,7 +4,7 @@ import {
   exportFileName,
   exportMimeType,
   parseImportedFile,
-} from '../src/core/transfer';
+} from '../packages/core/src/transfer';
 
 describe('buildExportContent', () => {
   it('exports the compressed output as plain text for .txt/.md', () => {

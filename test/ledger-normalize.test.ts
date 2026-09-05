@@ -6,8 +6,8 @@ import {
   reduceToTokens,
   tokenize,
   tokenSimilarity,
-} from '../src/core/ledger';
-import { ALL_RULES } from '../src/core/rules';
+} from '../packages/core/src/ledger';
+import { ALL_RULES } from '../packages/core/src/rules';
 
 describe('canonicalize', () => {
   it('lowercases and drops punctuation', () => {

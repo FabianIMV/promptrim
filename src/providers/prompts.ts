@@ -19,8 +19,8 @@
  * network.
  */
 
-import type { Level } from '../core';
-import type { Constraint } from '../core';
+import type { Level } from '@promptrim/core';
+import type { Constraint } from '@promptrim/core';
 
 const PROTECTION_RULES = [
   'Never alter anything inside fenced code blocks (```), inline code (`x`), or indented code.',

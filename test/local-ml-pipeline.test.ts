@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractConstraints, findProtectedRanges } from '../src/core';
+import { extractConstraints, findProtectedRanges } from '@promptrim/core';
 import { runLocalMlCompression } from '../src/local-ml/pipeline';
 import type { LocalMlEngine, LocalMlProgress } from '../src/local-ml/types';
 

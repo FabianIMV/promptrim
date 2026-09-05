@@ -27,7 +27,7 @@ import {
   scaleCompressedTokens,
   splitBatch,
   splitPrompt,
-} from '../core';
+} from '@promptrim/core';
 import type {
   BlockedChange,
   CacheReadyResult,
@@ -41,7 +41,7 @@ import type {
   Recommendation,
   TokenCountResult,
   TransferFormat,
-} from '../core';
+} from '@promptrim/core';
 import {
   DEFAULT_PROVIDER_ID,
   estimateAiCost,
@@ -215,7 +215,7 @@ export function App() {
       setApiKeys(loadKeys());
     }
     // A shared link (#s=...) carries only { input, level } — never a key, see
-    // src/core/share.ts. Loading it only fills the editor; it never triggers a
+    // packages/core/src/share.ts. Loading it only fills the editor; it never triggers a
     // compression or an AI-mode call on its own.
     const shared = decodeShareState(window.location.hash);
     if (shared) {

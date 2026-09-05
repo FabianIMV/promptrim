@@ -5,8 +5,8 @@ import type {
   PromptSplit,
   Recommendation,
   Scenario,
-} from '../core';
-import { usd } from '../core';
+} from '@promptrim/core';
+import { usd } from '@promptrim/core';
 
 interface Props {
   advice: CostAdvice;

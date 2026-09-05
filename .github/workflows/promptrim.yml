@@ -1,0 +1,47 @@
+name: PromptTrim
+
+# Dogfooding, as docs/PLAN.md Phase 7 requires ("la Action funciona sobre el
+# propio repo"): this repository runs its own action on its own prompt corpus
+# on every pull request. If the action breaks, this repository is the first to
+# find out.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: promptrim-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  prompts:
+    name: Prompt budget
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # The action fetches the base branch itself when it is missing, but
+          # fetching it here keeps the "vs base" column populated on the very
+          # first run of a new branch.
+          fetch-depth: 0
+
+      - name: Check the prompt corpus
+        uses: ./
+        with:
+          files: |
+            bench/corpus/phase0/*.md
+            bench/corpus/phase2/*.md
+            bench/corpus/phase6/*.md
+          # 1,200 tokens per file. The largest thing in the corpus today is
+          # bench/corpus/phase2/README.md at ~834 (it is documentation, not a
+          # prompt, and it is counted rather than quietly excluded).
+          budget: '1200'
+          model: claude-opus-5
+          level: aggressive
+          calls-per-day: '50000'
+          fail-on: budget
