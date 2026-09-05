@@ -2,15 +2,15 @@
  * The economic model, checked against numbers worked out by hand.
  *
  * Every expected figure in this file was computed on paper from the prices in
- * `data/pricing.json` and the caching rules in `data/caching.json`; the
+ * `packages/core/src/data/pricing.json` and the caching rules in `packages/core/src/data/caching.json`; the
  * arithmetic is written out in the comments so a reviewer can redo it without
  * running the code.
  */
 import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { splitPrompt } from '../src/core/cache-advisor/split';
-import { getModel } from '../src/core/pricing';
+import { splitPrompt } from '../packages/core/src/cache-advisor/split';
+import { getModel } from '../packages/core/src/pricing';
 import {
   adviseCost,
   breakEvenCalls,
@@ -18,9 +18,9 @@ import {
   defaultIntervalSeconds,
   minCallsPerHour,
   scaleCompressedTokens,
-} from '../src/core/cache-advisor/economics';
-import type { CacheWorkload } from '../src/core/cache-advisor/economics';
-import { ttlsForModel } from '../src/core/cache-advisor/rules';
+} from '../packages/core/src/cache-advisor/economics';
+import type { CacheWorkload } from '../packages/core/src/cache-advisor/economics';
+import { ttlsForModel } from '../packages/core/src/cache-advisor/rules';
 
 const opus = getModel('claude-opus-5')!;
 const sonnet = getModel('claude-sonnet-5')!;

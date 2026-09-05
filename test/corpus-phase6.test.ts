@@ -1,10 +1,10 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compress } from '../src/core/compress';
-import { findProtectedRanges } from '../src/core/segment';
-import { LEVELS } from '../src/core/rules';
-import { extractConstraints, verifyConstraints } from '../src/core/ledger';
+import { compress } from '../packages/core/src/compress';
+import { findProtectedRanges } from '../packages/core/src/segment';
+import { LEVELS } from '../packages/core/src/rules';
+import { extractConstraints, verifyConstraints } from '../packages/core/src/ledger';
 
 const CORPUS_DIR = join(import.meta.dirname, '..', 'bench', 'corpus', 'phase6');
 const FILES = readdirSync(CORPUS_DIR)

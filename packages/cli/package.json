@@ -1,0 +1,21 @@
+{
+  "name": "promptrim",
+  "version": "2.0.0-alpha.0",
+  "private": true,
+  "description": "Check prompt files in CI: tokens per file, delta against a git ref, duplicated instructions, and a compressed version the constraint ledger has verified.",
+  "license": "MIT",
+  "bin": {
+    "promptrim": "./dist/cli.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "dependencies": {
+    "@promptrim/core": "2.0.0-alpha.0"
+  }
+}

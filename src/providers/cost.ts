@@ -16,8 +16,8 @@
  *    lost, so the estimate has a floor (2 calls) and a ceiling (5).
  */
 
-import { costForTokens, countTokensForModel, getModel } from '../core';
-import type { Constraint, Level, ModelPricing } from '../core';
+import { costForTokens, countTokensForModel, getModel } from '@promptrim/core';
+import type { Constraint, Level, ModelPricing } from '@promptrim/core';
 import {
   compressSystemPrompt,
   compressUserPrompt,

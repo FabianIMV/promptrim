@@ -16,7 +16,15 @@
     "isolatedModules": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "noEmit": true
+    "noEmit": true,
+    "baseUrl": ".",
+    // Mirrors the Vite alias: the web app, the tests, the benchmark and the
+    // CLI sources are all type-checked against `packages/core`'s TypeScript,
+    // never against its emitted `dist`. `packages/*/tsconfig.build.json` is
+    // what checks the packages the way Node will actually load them.
+    "paths": {
+      "@promptrim/core": ["./packages/core/src/index.ts"]
+    }
   },
-  "include": ["src", "test", "vite.config.ts", "eslint.config.js"]
+  "include": ["src", "test", "bench", "packages/*/src", "vite.config.ts", "eslint.config.js"]
 }

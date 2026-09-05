@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { batchPreview, isBatch, splitBatch } from '../src/core/batch';
+import { batchPreview, isBatch, splitBatch } from '../packages/core/src/batch';
 
 describe('splitBatch', () => {
   it('splits on a bare --- line and trims each prompt', () => {

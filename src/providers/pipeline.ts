@@ -24,8 +24,14 @@
  *    a lost critical constraint gets repaired, which is the stricter reading.
  */
 
-import { buildLedger, extractConstraints, isCritical, verifyConstraints } from '../core';
-import type { Constraint, ConstraintCheck, DuplicateGroup, Level, LedgerReport } from '../core';
+import { buildLedger, extractConstraints, isCritical, verifyConstraints } from '@promptrim/core';
+import type {
+  Constraint,
+  ConstraintCheck,
+  DuplicateGroup,
+  Level,
+  LedgerReport,
+} from '@promptrim/core';
 import {
   compressSystemPrompt,
   compressUserPrompt,

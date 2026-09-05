@@ -1,5 +1,5 @@
 /**
- * `data/caching.json` against `data/pricing.json`.
+ * `packages/core/src/data/caching.json` against `packages/core/src/data/pricing.json`.
  *
  * These tests pin the facts the whole Cost Advisor rests on, so that a future
  * re-verification that changes a number has to change a test too.
@@ -12,13 +12,13 @@ import {
   cacheReadPricePerMtok,
   cacheWritePricePerMtok,
   getModel,
-} from '../src/core/pricing';
+} from '../packages/core/src/pricing';
 import {
   caching,
   minCacheableTokens,
   providerCacheRules,
   ttlsForModel,
-} from '../src/core/cache-advisor/rules';
+} from '../packages/core/src/cache-advisor/rules';
 
 describe('caching data', () => {
   it('is dated and covers the three providers', () => {

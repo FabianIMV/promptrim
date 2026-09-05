@@ -1,0 +1,35 @@
+{
+  // Emits the package that `packages/cli` (and any future Node consumer)
+  // requires. The web app never reads this output: `vite.config.ts` aliases
+  // `@promptrim/core` straight to `src/index.ts`, so `npm run dev` and
+  // `npm test` keep working on the sources with no build step in between.
+  //
+  // CommonJS on purpose. The sources import extensionless (`./compress`) and
+  // import `data/*.json` directly; emitting ESM for Node would need every
+  // relative specifier rewritten with a `.js` suffix and every JSON import
+  // rewritten with an import attribute — a repo-wide diff that buys nothing,
+  // because the only consumer of this output is a Node CLI. See docs/PLAN.md
+  // §6.8.
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "module": "node16",
+    "moduleResolution": "node16",
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}

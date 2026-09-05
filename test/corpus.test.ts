@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compress } from '../src/core/compress';
-import { findProtectedRanges } from '../src/core/segment';
-import { LEVELS } from '../src/core/rules';
+import { compress } from '../packages/core/src/compress';
+import { findProtectedRanges } from '../packages/core/src/segment';
+import { LEVELS } from '../packages/core/src/rules';
 
 const CORPUS_DIR = join(import.meta.dirname, '..', 'bench', 'corpus', 'phase0');
 const FILES = readdirSync(CORPUS_DIR)

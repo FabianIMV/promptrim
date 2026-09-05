@@ -3,11 +3,11 @@
  * exists to be able to give: "don't compress, reorder and cache".
  */
 import { describe, expect, it } from 'vitest';
-import { getModel } from '../src/core/pricing';
-import { adviseCost } from '../src/core/cache-advisor/economics';
-import type { CacheWorkload } from '../src/core/cache-advisor/economics';
-import { recommend, usd } from '../src/core/cache-advisor/recommend';
-import { splitPrompt } from '../src/core/cache-advisor/split';
+import { getModel } from '../packages/core/src/pricing';
+import { adviseCost } from '../packages/core/src/cache-advisor/economics';
+import type { CacheWorkload } from '../packages/core/src/cache-advisor/economics';
+import { recommend, usd } from '../packages/core/src/cache-advisor/recommend';
+import { splitPrompt } from '../packages/core/src/cache-advisor/split';
 
 const opus = getModel('claude-opus-5')!;
 const haiku = getModel('claude-haiku-4-5')!;

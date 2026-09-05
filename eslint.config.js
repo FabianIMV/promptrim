@@ -4,7 +4,7 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules'] },
+  { ignores: ['**/dist', '**/coverage', '**/node_modules'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   prettier,
@@ -29,6 +29,12 @@ export default tseslint.config(
     files: ['bench/**/*.ts'],
     languageOptions: { globals: { ...globals.node } },
     rules: { 'no-console': 'off' },
+  },
+  {
+    // The published CLI runs in Node, not a browser. It writes to
+    // process.stdout/stderr rather than console, so `no-console` stays on.
+    files: ['packages/cli/**/*.ts'],
+    languageOptions: { globals: { ...globals.node } },
   },
   {
     // Runs in the Service Worker global scope, not a window (no `document`,

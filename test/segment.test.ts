@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { findProtectedRanges, segment } from '../src/core/segment';
-import type { ProtectedKind } from '../src/core/segment';
+import { findProtectedRanges, segment } from '../packages/core/src/segment';
+import type { ProtectedKind } from '../packages/core/src/segment';
 
 function kindsOf(input: string): ProtectedKind[] {
   return findProtectedRanges(input).map((r) => r.kind);

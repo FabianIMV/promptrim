@@ -1,13 +1,13 @@
 /**
- * Reads `data/caching.json` — how each provider's cache actually behaves,
+ * Reads `src/data/caching.json` — how each provider's cache actually behaves,
  * copied from the official docs on `last_verified` and never from memory.
  *
- * Prices are not here: they live in `data/pricing.json`. This file holds the
+ * Prices are not here: they live in `src/data/pricing.json`. This file holds the
  * behaviour that decides whether caching can work at all — the minimum
  * cacheable prefix per model, which TTLs exist, whether a hit refreshes the
  * lifetime for free, and whether storage is billed on top.
  */
-import cachingData from '../../../data/caching.json';
+import cachingData from '../data/caching.json';
 import type { ModelPricing, Provider } from '../pricing';
 
 export interface CacheTtl {
@@ -61,7 +61,7 @@ export function minCacheableTokens(model: Pick<ModelPricing, 'id'>): number | un
   return caching.models[model.id]?.min_cacheable_tokens;
 }
 
-/** The TTLs available for a model, in the order they appear in `data/caching.json`. */
+/** The TTLs available for a model, in the order they appear in `src/data/caching.json`. */
 export function ttlsForModel(model: Pick<ModelPricing, 'id' | 'provider'>): CacheTtl[] {
   const rules = providerCacheRules(model.provider);
   const ids = caching.models[model.id]?.ttl_ids;

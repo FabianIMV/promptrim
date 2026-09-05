@@ -60,7 +60,7 @@ export interface CallOptions {
 export interface ProviderClient {
   id: ProviderId;
   label: string;
-  /** Models offered in AI mode, most capable first. Every id must exist in `data/pricing.json`. */
+  /** Models offered in AI mode, most capable first. Every id must exist in `packages/core/src/data/pricing.json`. */
   models: readonly string[];
   /** Step A (compression) default. */
   defaultModel: string;

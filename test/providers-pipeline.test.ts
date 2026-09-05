@@ -7,7 +7,7 @@
  * that a malformed payload becomes a message instead of a crash.
  */
 import { describe, expect, it } from 'vitest';
-import { extractConstraints } from '../src/core';
+import { extractConstraints } from '@promptrim/core';
 import {
   agreementFor,
   criticalLost,

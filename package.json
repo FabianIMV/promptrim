@@ -1,20 +1,25 @@
 {
-  "name": "promptrim",
+  "name": "promptrim-workspace",
   "version": "2.0.0-alpha.0",
   "private": true,
   "type": "module",
-  "description": "The prompt compressor that proves it did not break your prompt.",
+  "description": "The prompt compressor that proves it did not break your prompt. Workspace root: the web app lives here, the engine in packages/core and the CLI in packages/cli.",
   "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit && vite build",
+    "build": "npm run build:packages && tsc --noEmit && vite build",
+    "build:packages": "npm run build --workspace @promptrim/core && npm run build --workspace promptrim",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint . && prettier --check .",
     "format": "prettier --write .",
     "test:coverage": "vitest run --coverage",
-    "bench": "vite-node bench/run.ts"
+    "bench": "vite-node bench/run.ts",
+    "cli": "npm run build:packages --silent && node packages/cli/dist/cli.js"
   },
   "dependencies": {
     "js-tiktoken": "^1.0.21",
