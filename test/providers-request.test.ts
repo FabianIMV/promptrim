@@ -26,7 +26,7 @@ import { COMPRESS_SCHEMA, toGeminiSchema, VERIFY_SCHEMA } from '../src/providers
 import { parseRetryAfter, ProviderError, shortDetail, statusMessage } from '../src/providers/types';
 import type { StructuredRequest } from '../src/providers/types';
 import { PROVIDERS } from '../src/providers';
-import { getModel } from '../src/core';
+import { getModel } from '@promptrim/core';
 
 const REQUEST: StructuredRequest = {
   system: 'system prompt',
@@ -222,11 +222,11 @@ describe('error wording', () => {
 });
 
 describe('provider registry', () => {
-  it('offers only models that data/pricing.json can price', () => {
+  it('offers only models that packages/core/src/data/pricing.json can price', () => {
     for (const provider of PROVIDERS) {
       for (const id of provider.models) {
         const model = getModel(id);
-        expect(model, `${id} is missing from data/pricing.json`).toBeDefined();
+        expect(model, `${id} is missing from packages/core/src/data/pricing.json`).toBeDefined();
         expect(model!.provider).toBe(provider.id);
       }
       expect(provider.models).toContain(provider.defaultModel);

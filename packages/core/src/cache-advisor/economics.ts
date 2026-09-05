@@ -1,8 +1,8 @@
 /**
  * The economics of "compress vs cache", per provider.
  *
- * Every number here comes from `data/pricing.json` (prices) and
- * `data/caching.json` (behaviour), both verified against the providers' own
+ * Every number here comes from `src/data/pricing.json` (prices) and
+ * `src/data/caching.json` (behaviour), both verified against the providers' own
  * documentation. Nothing is a rule of thumb.
  *
  * The one modelling choice worth stating up front: a cached prefix is only

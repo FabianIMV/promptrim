@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { countTokensForModel } from '../src/core/tokenizers/count';
-import { estimateClaudeTokens } from '../src/core/tokenizers/claude';
-import { countOpenAiTokens } from '../src/core/tokenizers/openai';
+import { countTokensForModel } from '../packages/core/src/tokenizers/count';
+import { estimateClaudeTokens } from '../packages/core/src/tokenizers/claude';
+import { countOpenAiTokens } from '../packages/core/src/tokenizers/openai';
 
 afterEach(() => {
   vi.restoreAllMocks();

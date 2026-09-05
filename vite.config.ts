@@ -9,6 +9,16 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   base: '/promptrim/',
   plugins: [preact()],
+  resolve: {
+    alias: {
+      // Phase 7 moved the engine to `packages/core`, a real npm workspace with
+      // a build of its own for the CLI. The web app and the test suite point
+      // at the *sources* instead of that build: `npm run dev` and `npm test`
+      // keep working with no compile step in between, and the browser bundle
+      // is still tree-shaken from TypeScript rather than from emitted CJS.
+      '@promptrim/core': resolve(ROOT, 'packages/core/src/index.ts'),
+    },
+  },
   build: {
     target: 'es2022',
     sourcemap: true,
@@ -31,7 +41,7 @@ export default defineConfig({
     environment: 'node',
     include: ['test/**/*.test.ts'],
     coverage: {
-      include: ['src/core/**/*.ts'],
+      include: ['packages/core/src/**/*.ts', 'packages/cli/src/**/*.ts'],
     },
   },
 });

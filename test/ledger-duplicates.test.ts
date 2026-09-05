@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { extractConstraints, findDuplicateConstraints } from '../src/core/ledger';
+import { extractConstraints, findDuplicateConstraints } from '../packages/core/src/ledger';
 
 function duplicates(text: string) {
   return findDuplicateConstraints(extractConstraints(text));

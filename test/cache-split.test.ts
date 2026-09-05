@@ -2,7 +2,7 @@
  * Static prefix / dynamic suffix split and silent cache invalidators.
  */
 import { describe, expect, it } from 'vitest';
-import { findDynamicMarkers, splitPrompt } from '../src/core/cache-advisor/split';
+import { findDynamicMarkers, splitPrompt } from '../packages/core/src/cache-advisor/split';
 
 const SUPPORT_PROMPT = `You are a support agent for Acme Corp.
 Current date: 2026-09-03

@@ -1,9 +1,9 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { buildDiffItems, changeKey, projectDiff } from '../src/core/diff';
-import { compress } from '../src/core/compress';
-import { LEVELS } from '../src/core/rules';
+import { buildDiffItems, changeKey, projectDiff } from '../packages/core/src/diff';
+import { compress } from '../packages/core/src/compress';
+import { LEVELS } from '../packages/core/src/rules';
 
 function corpusFiles(dir: string): string[] {
   return readdirSync(join(import.meta.dirname, '..', 'bench', 'corpus', dir))

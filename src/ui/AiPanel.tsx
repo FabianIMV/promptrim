@@ -1,6 +1,6 @@
 import { formatUsd, MAX_CALLS, MIN_CALLS } from '../providers';
 import type { AiCostEstimate, AiStep, ProviderClient, ProviderId } from '../providers';
-import { getModel } from '../core';
+import { getModel } from '@promptrim/core';
 
 interface Props {
   providers: readonly ProviderClient[];

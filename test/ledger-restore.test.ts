@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { compress } from '../src/core/compress';
-import { extractConstraints, restoreConstraint, verifyConstraints } from '../src/core/ledger';
+import { compress } from '../packages/core/src/compress';
+import {
+  extractConstraints,
+  restoreConstraint,
+  verifyConstraints,
+} from '../packages/core/src/ledger';
 
 const ORIGINAL = [
   'Always answer in JSON.',

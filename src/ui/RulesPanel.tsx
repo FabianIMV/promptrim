@@ -1,6 +1,6 @@
 import { useMemo } from 'preact/hooks';
-import { ALL_RULES, LEVELS } from '../core';
-import type { Level } from '../core';
+import { ALL_RULES, LEVELS } from '@promptrim/core';
+import type { Level } from '@promptrim/core';
 
 interface Props {
   disabledRuleIds: ReadonlySet<string>;

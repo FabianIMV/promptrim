@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { countGeminiTokens } from '../src/core/tokenizers/gemini';
-import { estimateClaudeTokens } from '../src/core/tokenizers/claude';
+import { countGeminiTokens } from '../packages/core/src/tokenizers/gemini';
+import { estimateClaudeTokens } from '../packages/core/src/tokenizers/claude';
 
 const originalFetch = globalThis.fetch;
 

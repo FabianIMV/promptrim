@@ -197,7 +197,7 @@
       </p>
       <div class="bench-table">
         <!-- BENCHMARK:LANDING:START -->
-<p class="advisor-sub">Generado por <code>npm run bench</code> el 2026-09-04. Tokens contados con el tokenizador real o200k (js-tiktoken) — nunca estimados. El libro de restricciones se aplica en todos los niveles aquí (el valor por defecto del producto solo lo aplica en Aggressive), así que los cambios bloqueados son visibles en los tres.</p>
+<p class="advisor-sub">Generado por <code>npm run bench</code> el 2026-09-05. Tokens contados con el tokenizador real o200k (js-tiktoken) — nunca estimados. El libro de restricciones se aplica en todos los niveles aquí (el valor por defecto del producto solo lo aplica en Aggressive), así que los cambios bloqueados son visibles en los tres.</p>
 <h3>System prompts de estilo producción (40 prompts)</h3>
 <p class="advisor-sub">bench/corpus/phase0 + bench/corpus/phase2 — fixtures de regresión escritos para ser ya cuidadosos. Una reducción casi nula aquí es el resultado esperado: no se inventa nada que recortar.</p>
 <div class="advisor-scroll"><table class="advisor-table">
@@ -244,7 +244,7 @@
           <h3>No borra palabras de instrucción</h3>
           <p>
             "never", "always", "must", "only", "step by step" y cualquier cosa similar nunca se
-            eliminan, en ningún nivel. <code>src/core/rules/discarded.ts</code> enumera cada regla
+            eliminan, en ningún nivel. <code>packages/core/src/rules/discarded.ts</code> enumera cada regla
             de la app anterior que hacía esto, y por qué se descartó.
           </p>
         </div>

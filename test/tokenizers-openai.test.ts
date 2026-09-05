@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { countOpenAiTokens } from '../src/core/tokenizers/openai';
+import { countOpenAiTokens } from '../packages/core/src/tokenizers/openai';
 
 interface Fixture {
   text: string;

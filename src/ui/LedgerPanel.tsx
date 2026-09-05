@@ -1,6 +1,12 @@
 import { useMemo } from 'preact/hooks';
-import { CONSTRAINT_TYPES, TYPE_LABELS } from '../core';
-import type { BlockedChange, Constraint, ConstraintCheck, ConstraintType, Ledger } from '../core';
+import { CONSTRAINT_TYPES, TYPE_LABELS } from '@promptrim/core';
+import type {
+  BlockedChange,
+  Constraint,
+  ConstraintCheck,
+  ConstraintType,
+  Ledger,
+} from '@promptrim/core';
 
 /** What the AI verifier (Phase 5, step B) said about one constraint. */
 export interface VerifierVerdict {

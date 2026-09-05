@@ -1,9 +1,9 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { compress } from '../src/core/compress';
-import { findProtectedRanges } from '../src/core/segment';
-import { LEVELS } from '../src/core/rules';
+import { compress } from '../packages/core/src/compress';
+import { findProtectedRanges } from '../packages/core/src/segment';
+import { LEVELS } from '../packages/core/src/rules';
 import {
   containsTokens,
   CONSTRAINT_TYPES,
@@ -11,8 +11,8 @@ import {
   extractConstraints,
   reduceToTokens,
   verifyConstraints,
-} from '../src/core/ledger';
-import type { Constraint, ConstraintType } from '../src/core/ledger';
+} from '../packages/core/src/ledger';
+import type { Constraint, ConstraintType } from '../packages/core/src/ledger';
 
 const CORPUS_DIR = join(import.meta.dirname, '..', 'bench', 'corpus', 'phase2');
 

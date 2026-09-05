@@ -46,12 +46,16 @@
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { compress } from '../src/core/compress';
-import { findProtectedRanges } from '../src/core/segment';
-import { LEVELS } from '../src/core/rules';
-import type { Level } from '../src/core/rules';
-import { CRITICAL_TYPES, extractConstraints, verifyConstraints } from '../src/core/ledger';
-import { countOpenAiTokens } from '../src/core/tokenizers/openai';
+import {
+  compress,
+  countOpenAiTokens,
+  CRITICAL_TYPES,
+  extractConstraints,
+  findProtectedRanges,
+  LEVELS,
+  verifyConstraints,
+} from '@promptrim/core';
+import type { Level } from '@promptrim/core';
 import { PROVIDERS, runAiPipeline } from '../src/providers';
 import type { ProviderClient } from '../src/providers';
 
@@ -316,7 +320,7 @@ async function costForUsage(
   inputTokens: number,
   outputTokens: number,
 ): Promise<number> {
-  const { getModel, costForTokens } = await import('../src/core/pricing');
+  const { getModel, costForTokens } = await import('@promptrim/core');
   const model = getModel(modelId);
   if (!model) return 0;
   return (

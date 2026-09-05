@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { applyChanges, compress } from '../src/core/compress';
-import { LEVELS } from '../src/core/rules';
+import { applyChanges, compress } from '../packages/core/src/compress';
+import { LEVELS } from '../packages/core/src/rules';
 
 describe('regression: the legacy engine corrupted content (docs/PLAN.md, Section 0)', () => {
   it('leaves `x.utilize()` inside a code fence untouched', () => {

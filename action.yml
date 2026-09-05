@@ -1,0 +1,222 @@
+name: PromptTrim
+description: >-
+  Comment on a pull request with the token cost of its prompt files: the delta
+  against the base branch, the projected monthly bill, duplicated instructions,
+  and a compressed version the constraint ledger has verified.
+author: FabianIMV
+branding:
+  icon: scissors
+  color: purple
+
+inputs:
+  files:
+    description: >-
+      Glob patterns, one per line (or space-separated), relative to
+      working-directory. Directories are scanned for .md, .markdown, .txt and
+      .prompt files.
+    required: false
+    default: 'prompts/**/*.md'
+  budget:
+    description: Per-file token ceiling. Leave empty for no budget.
+    required: false
+    default: ''
+  model:
+    description: >-
+      Model whose tokenizer and price to use. Must exist in
+      packages/core/src/data/pricing.json. OpenAI models are counted exactly
+      offline; Anthropic and Gemini models need ANTHROPIC_API_KEY /
+      GEMINI_API_KEY in the environment to be exact, and are reported as
+      calibrated estimates otherwise.
+    required: false
+    default: 'claude-sonnet-5'
+  level:
+    description: 'Compression level to suggest: light, balanced or aggressive.'
+    required: false
+    default: 'balanced'
+  base-ref:
+    description: >-
+      Branch the token delta is measured against. Defaults to the pull
+      request's base branch, then to the repository default branch. Set to
+      "none" to skip the comparison.
+    required: false
+    default: ''
+  calls-per-day:
+    description: Call volume used for the monthly cost projection.
+    required: false
+    default: '1000'
+  fail-on:
+    description: >-
+      Comma-separated list of budget, regression, duplicates — or none to
+      report without failing the job.
+    required: false
+    default: 'none'
+  comment:
+    description: Post (and keep updating) a comment on the pull request.
+    required: false
+    default: 'true'
+  working-directory:
+    description: Directory to run in, relative to the workspace.
+    required: false
+    default: '.'
+  node-version:
+    description: Node version used to build and run the CLI.
+    required: false
+    default: '22'
+  github-token:
+    description: Token used to post the comment. Needs pull-requests:write.
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  exit-code:
+    description: '0 clean, 1 a gate tripped, 2 the invocation was wrong.'
+    value: ${{ steps.check.outputs.exit-code }}
+  report-path:
+    description: Absolute path to the Markdown report the run produced.
+    value: ${{ steps.check.outputs.report-path }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
+    - name: Build the promptrim CLI
+      shell: bash
+      working-directory: ${{ github.action_path }}
+      run: |
+        set -euo pipefail
+        # Already built — the case when this repository runs the action on
+        # itself after its own build step.
+        if [ -f packages/cli/dist/cli.js ]; then
+          echo "Reusing packages/cli/dist/cli.js"
+          exit 0
+        fi
+        npm ci --ignore-scripts
+        npm run build:packages
+
+    - name: Fetch the base branch
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        INPUT_BASE_REF: ${{ inputs.base-ref }}
+        EVENT_BASE_REF: ${{ github.base_ref }}
+        DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+      run: |
+        set -uo pipefail
+        BASE="${INPUT_BASE_REF:-${EVENT_BASE_REF:-${DEFAULT_BRANCH:-main}}}"
+        echo "PROMPTRIM_BASE=$BASE" >> "$GITHUB_ENV"
+        if [ "$BASE" = "none" ]; then
+          echo "Base comparison disabled."
+          exit 0
+        fi
+        # A default checkout is shallow and has no remote-tracking branch for
+        # the base, which would leave every "vs base" cell empty. Best effort:
+        # the CLI reports why the delta is missing rather than failing.
+        if ! git rev-parse --verify --quiet "origin/$BASE^{commit}" >/dev/null; then
+          git fetch --no-tags --depth=1 origin "+refs/heads/$BASE:refs/remotes/origin/$BASE" \
+            || echo "::warning::Could not fetch origin/$BASE; the report will have no token delta."
+        fi
+
+    - name: Check prompt files
+      id: check
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        INPUT_FILES: ${{ inputs.files }}
+        INPUT_BUDGET: ${{ inputs.budget }}
+        INPUT_MODEL: ${{ inputs.model }}
+        INPUT_LEVEL: ${{ inputs.level }}
+        INPUT_CALLS_PER_DAY: ${{ inputs.calls-per-day }}
+        INPUT_FAIL_ON: ${{ inputs.fail-on }}
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        set -uo pipefail
+        REPORT="$RUNNER_TEMP/promptrim-report.md"
+
+        # Patterns must reach the CLI unexpanded: the shell would resolve them
+        # against the workflow's directory, and `**` would not mean what it
+        # means to the CLI. `set -f` turns globbing off for the split.
+        set -f
+        # shellcheck disable=SC2206
+        PATTERNS=($INPUT_FILES)
+        set +f
+
+        ARGS=(check "${PATTERNS[@]}"
+          --model "$INPUT_MODEL"
+          --level "$INPUT_LEVEL"
+          --calls-per-day "$INPUT_CALLS_PER_DAY"
+          --fail-on "$INPUT_FAIL_ON"
+          --format markdown
+          --out "$REPORT")
+        if [ -n "$INPUT_BUDGET" ]; then
+          ARGS+=(--budget "$INPUT_BUDGET")
+        fi
+        if [ "$PROMPTRIM_BASE" = "none" ]; then
+          ARGS+=(--no-base)
+        else
+          ARGS+=(--base "$PROMPTRIM_BASE")
+        fi
+
+        node "$ACTION_PATH/packages/cli/dist/cli.js" "${ARGS[@]}"
+        CODE=$?
+
+        echo "exit-code=$CODE" >> "$GITHUB_OUTPUT"
+        echo "report-path=$REPORT" >> "$GITHUB_OUTPUT"
+        if [ -f "$REPORT" ]; then
+          cat "$REPORT" >> "$GITHUB_STEP_SUMMARY"
+        fi
+
+    - name: Comment on the pull request
+      if: ${{ always() && inputs.comment == 'true' && github.event_name == 'pull_request' }}
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+        REPO: ${{ github.repository }}
+        PR_NUMBER: ${{ github.event.pull_request.number }}
+        REPORT: ${{ steps.check.outputs.report-path }}
+      run: |
+        set -uo pipefail
+        if [ ! -f "$REPORT" ]; then
+          echo "::warning::No report to post."
+          exit 0
+        fi
+
+        # GitHub rejects a comment body over 65536 characters. Truncating with
+        # a visible note beats a failed API call and no comment at all.
+        BODY="$RUNNER_TEMP/promptrim-comment.md"
+        if [ "$(wc -c < "$REPORT")" -gt 60000 ]; then
+          head -c 60000 "$REPORT" > "$BODY"
+          printf '\n\n_Report truncated. Run `promptrim check` locally for the full output._\n' >> "$BODY"
+        else
+          cp "$REPORT" "$BODY"
+        fi
+
+        jq -Rs '{body: .}' < "$BODY" > "$RUNNER_TEMP/promptrim-comment.json"
+
+        # One sticky comment per pull request: find the previous one by its
+        # marker and edit it, so a ten-commit PR does not collect ten reports.
+        MARKER='<!-- promptrim-report -->'
+        # `--paginate` applies --jq per page, so the filter emits one id per
+        # matching comment across all pages; the first one is the sticky one.
+        EXISTING=$(gh api "repos/$REPO/issues/$PR_NUMBER/comments" --paginate \
+          --jq ".[] | select(.body | startswith(\"$MARKER\")) | .id" | head -n 1) || EXISTING=''
+
+        if [ -n "$EXISTING" ]; then
+          gh api -X PATCH "repos/$REPO/issues/comments/$EXISTING" \
+            --input "$RUNNER_TEMP/promptrim-comment.json" --silent \
+            || echo "::warning::Could not update the PromptTrim comment (is pull-requests:write granted?)."
+        else
+          gh api -X POST "repos/$REPO/issues/$PR_NUMBER/comments" \
+            --input "$RUNNER_TEMP/promptrim-comment.json" --silent \
+            || echo "::warning::Could not post the PromptTrim comment (a fork pull request has a read-only token)."
+        fi
+
+    - name: Enforce the gates
+      if: ${{ steps.check.outputs.exit-code != '0' }}
+      shell: bash
+      run: |
+        echo "::error::promptrim check exited ${{ steps.check.outputs.exit-code }}. See the job summary."
+        exit 1

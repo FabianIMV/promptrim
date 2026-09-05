@@ -26,8 +26,13 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { extractConstraints, isCritical, restoreConstraint, verifyConstraints } from '../src/core';
-import type { Constraint } from '../src/core';
+import {
+  extractConstraints,
+  isCritical,
+  restoreConstraint,
+  verifyConstraints,
+} from '@promptrim/core';
+import type { Constraint } from '@promptrim/core';
 import {
   compressSystemPrompt,
   formatLedger,

@@ -5,7 +5,7 @@ import {
   getModel,
   pricing,
   projectedMonthlyCost,
-} from '../src/core/pricing';
+} from '../packages/core/src/pricing';
 
 describe('pricing data', () => {
   it('has a last_verified date and at least one model per provider', () => {

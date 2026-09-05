@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { applyChanges, compress } from '../src/core/compress';
-import { ALL_RULES } from '../src/core/rules';
-import type { Rule } from '../src/core/rules';
-import { extractConstraints } from '../src/core/ledger';
+import { applyChanges, compress } from '../packages/core/src/compress';
+import { ALL_RULES } from '../packages/core/src/rules';
+import type { Rule } from '../packages/core/src/rules';
+import { extractConstraints } from '../packages/core/src/ledger';
 
 /**
  * A rule that breaks the Section 2 policy on purpose: it deletes a requirement

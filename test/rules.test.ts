@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { compress } from '../src/core/compress';
-import { ALL_RULES, DISCARDED_RULES, rulesForLevel } from '../src/core/rules';
-import type { Rule } from '../src/core/rules';
+import { compress } from '../packages/core/src/compress';
+import { ALL_RULES, DISCARDED_RULES, rulesForLevel } from '../packages/core/src/rules';
+import type { Rule } from '../packages/core/src/rules';
 
 describe('rule policy (docs/PLAN.md, Section 2)', () => {
   it('every rule id is unique', () => {
