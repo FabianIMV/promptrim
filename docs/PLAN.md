@@ -1031,7 +1031,12 @@ ejecutaron localmente contra este mismo repositorio, con `RUNNER_TEMP`, `GITHUB_
 del workflow (`claude-opus-5`, `aggressive`, presupuesto 1200, 50 000 llamadas/día, `fail-on: budget`):
 52 archivos, `exit-code=0`, informe Markdown escrito y `jq -Rs` produciendo un cuerpo de comentario válido
 que empieza por el marcador pegajoso. La ruta de fallo también se probó (presupuesto 200 → código de salida
-1). La corrida real en GitHub Actions ocurre al abrir el PR de esta fase; ver desviaciones.
+1). **Y después, en un runner real:** el workflow `Prompt budget` corrió sobre el PR #16 de esta misma fase
+y terminó en verde, con `origin/main` resuelto como base y el comentario publicado por `github-actions[bot]`
+([#16 comment](https://github.com/FabianIMV/promptrim/pull/16#issuecomment-5549196322)) — los mismos 52
+archivos, 8676 tokens y las mismas dos instrucciones duplicadas que dio la simulación local. El criterio de
+aceptación de la fase ("la Action funciona sobre el propio repo, dogfooding sobre `bench/corpus`") queda
+cumplido sobre GitHub Actions, no solo en local.
 
 **Decisiones tomadas en esta fase:**
 
@@ -1099,10 +1104,9 @@ que empieza por el marcador pegajoso. La ruta de fallo también se probó (presu
 - **`data/` ya no está en la raíz del repositorio**, contra el árbol dibujado en la Sección 2 (decisión 4).
   Todas las referencias en prosa (README, `index.html`, `es/index.html`, comentarios de código y tests) se
   actualizaron a `packages/core/src/data/`; no queda ninguna ruta obsoleta.
-- **La Action se verificó ejecutando sus pasos de shell en local, no en un runner de GitHub.** Una corrida
-  real necesita un PR abierto, que es el último paso de esta sesión: el workflow queda commiteado y correrá
-  sobre el propio PR de la fase. Lo que sí está probado aquí es todo lo que no depende del runner (el CLI,
-  el informe, los códigos de salida, el troceado de patrones, el payload del comentario) más 12 tests que
+- **La Action se probó primero en local y después en un runner real.** La simulación de los pasos de shell
+  fue lo que permitió depurarla antes de abrir el PR; la corrida de GitHub Actions sobre el PR #16 es la que
+  cuenta como aceptación. Además de eso hay 12 tests que
   atan `action.yml` y el workflow al CLI: que cada `--flag` que la Action pasa existe en la ayuda, que el
   marcador del comentario coincide con el del renderizador, que el modelo y el nivel del workflow son
   válidos, que sus globs encuentran archivos y que ningún archivo del corpus supera el presupuesto que el
