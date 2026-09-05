@@ -77,6 +77,7 @@
           "Compresión basada en reglas con protección de código, cadenas, URLs y variables",
           "Libro de restricciones con checklist verificable y restauración de un clic",
           "Reescritura con IA, verificada de forma independiente y con reparación automática",
+          "Compresión experimental con ML local (LLMLingua-2), sin necesidad de clave de API",
           "Conteo exacto de tokens por proveedor",
           "Cost Advisor: comprimir vs. cachear",
           "Compartir un prompt por URL, o importar/exportar como .txt, .md o .json",
@@ -151,7 +152,7 @@
     <!-- Cómo funciona -->
     <section class="how">
       <h2>Cómo funciona PromptTrim</h2>
-      <p class="how-sub">Dos modos de compresión según lo que necesites</p>
+      <p class="how-sub">Tres modos de compresión según lo que necesites</p>
       <div class="steps">
         <div class="step">
           <div class="step-icon">⚡</div>
@@ -167,6 +168,16 @@
           <p>
             Tu modelo reescribe el prompt, un segundo modelo audita el resultado contra cada
             restricción, y lo que se pierde se repara automáticamente. Usa tu propia clave.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🧪</div>
+          <h3>Modo ML local (experimental)</h3>
+          <p>
+            Un modelo pequeño (TinyBERT, LLMLingua-2) comprime enteramente en tu navegador — sin
+            clave de API, nada sale de tu equipo. Su salida siempre pasa por las mismas regiones
+            protegidas y el mismo libro de restricciones — mira <a href="#benchmark">los números
+            reales</a> para entender por qué eso importa.
           </p>
         </div>
         <div class="step">
@@ -197,7 +208,7 @@
       </p>
       <div class="bench-table">
         <!-- BENCHMARK:LANDING:START -->
-<p class="advisor-sub">Generado por <code>npm run bench</code> el 2026-09-04. Tokens contados con el tokenizador real o200k (js-tiktoken) — nunca estimados. El libro de restricciones se aplica en todos los niveles aquí (el valor por defecto del producto solo lo aplica en Aggressive), así que los cambios bloqueados son visibles en los tres.</p>
+<p class="advisor-sub">Generado por <code>npm run bench</code> el 2026-09-05. Tokens contados con el tokenizador real o200k (js-tiktoken) — nunca estimados. El libro de restricciones se aplica en todos los niveles aquí (el valor por defecto del producto solo lo aplica en Aggressive), así que los cambios bloqueados son visibles en los tres.</p>
 <h3>System prompts de estilo producción (40 prompts)</h3>
 <p class="advisor-sub">bench/corpus/phase0 + bench/corpus/phase2 — fixtures de regresión escritos para ser ya cuidadosos. Una reducción casi nula aquí es el resultado esperado: no se inventa nada que recortar.</p>
 <div class="advisor-scroll"><table class="advisor-table">
@@ -217,6 +228,11 @@
 <tr><th scope="row">Aggressive</th><td>12.3%</td><td>12.2% (2,426 → 2,129)</td><td>100.0% (60/60)</td><td>0</td></tr>
 </tbody></table></div>
 <p class="advisor-sub">Modo IA no medido para: Anthropic, OpenAI, Google Gemini. No se publica ningún porcentaje para un proveedor que no fue realmente llamado.</p>
+<p class="advisor-sub">Modo ML local (TinyBERT vía LLMLingua-2, inferencia real en el dispositivo), nivel Balanced, muestra de 3 prompts del corpus cotidiano:</p>
+<div class="advisor-scroll"><table class="advisor-table">
+<thead><tr><th scope="col">Restricciones críticas preservadas</th><th scope="col">Violaciones de regiones protegidas</th></tr></thead>
+<tbody><tr><td>25.0% (5/20)</td><td>0/8</td></tr></tbody>
+</table></div>
 <!-- BENCHMARK:LANDING:END -->
       </div>
     </section>
@@ -284,6 +300,17 @@
             El modo lote (varios prompts separados por <code>---</code>) es solo modo rápido.
             Disparar un número ilimitado de llamadas de API pagas desde un solo clic no debería
             pasar por accidente.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-icon">🚫</div>
+          <h3>No confía en la salida del modo ML local por sí sola</h3>
+          <p>
+            LLMLingua-2 descarta tokens por importancia estadística, no por significado — nuestro
+            propio benchmark de arriba midió que preserva solo el 25% de las restricciones
+            críticas sin ayuda. Por eso está marcado como <strong>experimental</strong>: las
+            regiones protegidas y el libro de restricciones por los que siempre pasa son lo que lo
+            hace utilizable, no una afirmación de que el modelo en sí sea confiable.
           </p>
         </div>
       </div>
@@ -378,12 +405,13 @@
       <div class="faq-item">
         <div class="faq-q">¿Mis datos son privados?</div>
         <div class="faq-a">
-          En modo rápido, la compresión ocurre 100% en tu navegador — nada sale de tu equipo. En
-          modo IA, tu prompt se envía directamente desde tu navegador al proveedor que elijas
-          (Anthropic, OpenAI o Google) usando tu propia clave de API. La clave permanece en
-          memoria a menos que marques "Recordar en este navegador", que la guarda en
-          <code>sessionStorage</code> hasta que cierres la pestaña. Nunca vemos tus prompts ni tus
-          claves.
+          En modo rápido y en modo ML local, la compresión ocurre 100% en tu navegador — nada sale
+          de tu equipo (el modo ML local descarga un modelo pequeño una vez y después funciona
+          totalmente sin conexión). En modo IA, tu prompt se envía directamente desde tu navegador
+          al proveedor que elijas (Anthropic, OpenAI o Google) usando tu propia clave de API. La
+          clave permanece en memoria a menos que marques "Recordar en este navegador", que la
+          guarda en <code>sessionStorage</code> hasta que cierres la pestaña. Nunca vemos tus
+          prompts ni tus claves.
         </div>
       </div>
       <div class="faq-item">
@@ -406,6 +434,18 @@
           mientras que comprimir recorta 15-30% una sola vez. El Cost Advisor calcula ambos contra
           tu propio volumen de llamadas y recomienda el más barato — incluyendo "no comprimas,
           reordena estas secciones y cachea".
+        </div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">¿Puedo confiar en el modo ML local?</div>
+        <div class="faq-a">
+          No por sí solo — por eso está marcado como experimental. Ejecuta un modelo pequeño
+          (TinyBERT, LLMLingua-2) enteramente en tu navegador, sin ninguna noción de lo que está
+          recortando; nuestro propio benchmark midió que preserva solo el 25% de las restricciones
+          críticas sin ayuda. Lo que lo hace utilizable es que su salida siempre pasa por las
+          mismas regiones protegidas y el mismo libro de restricciones que el modo rápido y el
+          modo IA, así que cada pérdida aparece como un ✗ que puedes restaurar con un clic, en vez
+          de un prompt corrompido en silencio.
         </div>
       </div>
       <div class="faq-item">
@@ -433,8 +473,9 @@
           PromptTrim extrae cada prohibición, requisito, formato de salida, número y literal
           citado de tu prompt. Después de comprimir, verifica cada uno contra el resultado y te
           muestra un ✓ o un ✗ — con un botón de <strong>Restaurar</strong> junto a cualquier cosa
-          que se haya perdido. Esa verificación corre siempre en tu navegador, incluso en modo IA,
-          donde además decide el resultado final por encima de lo que diga el modelo.
+          que se haya perdido. Esa verificación corre siempre en tu navegador, en modo rápido, IA
+          y ML local por igual, y en modo IA además decide el resultado final por encima de lo que
+          diga el modelo.
         </div>
       </div>
     </section>

@@ -41,6 +41,14 @@
  * report says so explicitly rather than guessing — this is the debt
  * docs/PLAN.md §6.6 left for this phase ("ningún material público debe
  * afirmar un porcentaje para el modo IA" until it is measured for real).
+ *
+ * Local ML mode (docs/PLAN.md Phase 8) is optional too, for a different
+ * reason: it needs no key, but the first run downloads a real ~57 MB ONNX
+ * model over the network and then runs real on-device inference, which is
+ * slow and would make every `npm run bench` (and every CI run that calls it)
+ * network-dependent and much slower for a number this repo already has a
+ * mechanism to report honestly as "not measured". It only runs when
+ * `LOCAL_ML_BENCH=1` is set.
  */
 
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
@@ -54,6 +62,8 @@ import { CRITICAL_TYPES, extractConstraints, verifyConstraints } from '../src/co
 import { countOpenAiTokens } from '../src/core/tokenizers/openai';
 import { PROVIDERS, runAiPipeline } from '../src/providers';
 import type { ProviderClient } from '../src/providers';
+import { runLocalMlCompression } from '../src/local-ml/pipeline';
+import { loadLocalMlEngine } from '../src/local-ml/engine';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -92,6 +102,11 @@ const CORPUS_GROUPS: CorpusGroup[] = [
 const AI_SAMPLE_GROUP = 'everyday';
 const AI_SAMPLE_SIZE = 5;
 const AI_LEVEL: Level = 'balanced';
+
+const LOCAL_ML_SAMPLE_GROUP = 'everyday';
+/** On-device CPU inference is much slower than an API call; a small sample keeps `npm run bench` usable. */
+const LOCAL_ML_SAMPLE_SIZE = 3;
+const LOCAL_ML_LEVEL: Level = 'balanced';
 
 const PROVIDER_ENV_VAR: Record<ProviderClient['id'], string> = {
   anthropic: 'ANTHROPIC_API_KEY',
@@ -138,6 +153,15 @@ interface AiSkipped {
   provider: ProviderClient['id'];
   label: string;
   reason: string;
+}
+
+interface LocalMlStats {
+  prompts: number;
+  criticalTotal: number;
+  criticalKept: number;
+  criticalPreservedPct: number;
+  protectedRegions: number;
+  protectedRegionViolations: number;
 }
 
 function loadCorpus(dirs: string[]): CorpusEntry[] {
@@ -311,6 +335,51 @@ async function benchAiMode(
   return { measured, skipped };
 }
 
+/**
+ * Measures Local ML mode for real: downloads the actual TinyBERT model (once,
+ * cached by `@huggingface/transformers` under `~/.cache`) and runs real
+ * on-device inference over a small sample, the same `runLocalMlCompression`
+ * pipeline the UI calls. `{ device: 'cpu' }` is the Node-side config the
+ * library's own README recommends; the browser instead auto-picks WebGPU or
+ * WASM (see `src/local-ml/engine.ts`).
+ */
+async function benchLocalMl(corpus: CorpusEntry[]): Promise<LocalMlStats | null> {
+  if (!process.env.LOCAL_ML_BENCH) return null;
+
+  const sample = corpus.slice(0, LOCAL_ML_SAMPLE_SIZE);
+  let criticalTotal = 0;
+  let criticalKept = 0;
+  let protectedRegions = 0;
+  let protectedRegionViolations = 0;
+
+  for (const { prompt } of sample) {
+    const run = await runLocalMlCompression(prompt, {
+      level: LOCAL_ML_LEVEL,
+      loadEngine: (onProgress) => loadLocalMlEngine(onProgress, { device: 'cpu', dtype: 'fp32' }),
+    });
+    const critical = run.report.checks.filter((c) => CRITICAL_TYPES.includes(c.constraint.type));
+    criticalTotal += critical.length;
+    criticalKept += critical.filter((c) => c.preserved).length;
+
+    const ranges = findProtectedRanges(prompt);
+    protectedRegions += ranges.length;
+    for (const range of ranges) {
+      if (!run.output.includes(prompt.slice(range.start, range.end))) {
+        protectedRegionViolations += 1;
+      }
+    }
+  }
+
+  return {
+    prompts: sample.length,
+    criticalTotal,
+    criticalKept,
+    criticalPreservedPct: criticalTotal > 0 ? (criticalKept / criticalTotal) * 100 : 100,
+    protectedRegions,
+    protectedRegionViolations,
+  };
+}
+
 async function costForUsage(
   modelId: string,
   inputTokens: number,
@@ -362,6 +431,7 @@ function renderMarkdown(
   today: string,
   groups: GroupResult[],
   ai: { measured: AiProviderStats[]; skipped: AiSkipped[] },
+  localMl: LocalMlStats | null,
 ): string {
   const lines: string[] = [];
   lines.push(
@@ -397,6 +467,24 @@ function renderMarkdown(
     lines.push('');
   }
 
+  if (localMl) {
+    lines.push(
+      `Local ML mode (TinyBERT via LLMLingua-2, real on-device inference), Balanced level, ${localMl.prompts}-prompt sample from the everyday corpus:`,
+    );
+    lines.push('');
+    lines.push('| Critical constraints preserved | Protected-region violations |');
+    lines.push('|---|---|');
+    lines.push(
+      `| ${fmtPct(localMl.criticalPreservedPct)} (${localMl.criticalKept}/${localMl.criticalTotal}) | ${localMl.protectedRegionViolations}/${localMl.protectedRegions} |`,
+    );
+    lines.push('');
+  } else {
+    lines.push(
+      'Local ML mode not measured: set `LOCAL_ML_BENCH=1` and re-run `npm run bench` to download the real ~57 MB TinyBERT model and measure it for real — no percentage is published for a mode that was not actually run.',
+    );
+    lines.push('');
+  }
+
   return lines.join('\n').trimEnd();
 }
 
@@ -418,6 +506,9 @@ const HTML_LABELS: Record<
     aiSample: string;
     aiHeaders: [string, string, string, string, string, string, string];
     aiSkipped: (names: string) => string;
+    localMlSample: string;
+    localMlHeaders: [string, string];
+    localMlSkipped: string;
   }
 > = {
   en: {
@@ -442,6 +533,10 @@ const HTML_LABELS: Record<
     ],
     aiSkipped: (names) =>
       `AI mode not measured for: ${names}. No percentage is published for a provider that was not actually called.`,
+    localMlSample: `Local ML mode (TinyBERT via LLMLingua-2, real on-device inference), Balanced level, ${LOCAL_ML_SAMPLE_SIZE}-prompt sample from the everyday corpus:`,
+    localMlHeaders: ['Critical constraints preserved', 'Protected-region violations'],
+    localMlSkipped:
+      'Local ML mode not measured: set LOCAL_ML_BENCH=1 and re-run npm run bench to download the real model and measure it. No percentage is published for a mode that was not actually run.',
   },
   es: {
     generatedBy: (today) =>
@@ -465,6 +560,10 @@ const HTML_LABELS: Record<
     ],
     aiSkipped: (names) =>
       `Modo IA no medido para: ${names}. No se publica ningún porcentaje para un proveedor que no fue realmente llamado.`,
+    localMlSample: `Modo ML local (TinyBERT vía LLMLingua-2, inferencia real en el dispositivo), nivel Balanced, muestra de ${LOCAL_ML_SAMPLE_SIZE} prompts del corpus cotidiano:`,
+    localMlHeaders: ['Restricciones críticas preservadas', 'Violaciones de regiones protegidas'],
+    localMlSkipped:
+      'Modo ML local no medido: define LOCAL_ML_BENCH=1 y vuelve a ejecutar npm run bench para descargar el modelo real y medirlo. No se publica ningún porcentaje para un modo que no se ejecutó realmente.',
   },
 };
 
@@ -480,6 +579,7 @@ function renderHtml(
   today: string,
   groups: GroupResult[],
   ai: { measured: AiProviderStats[]; skipped: AiSkipped[] },
+  localMl: LocalMlStats | null,
   lang: HtmlLang,
 ): string {
   const t = HTML_LABELS[lang];
@@ -523,6 +623,20 @@ function renderHtml(
     lines.push(`<p class="advisor-sub">${t.aiSkipped(escapeHtml(names))}</p>`);
   }
 
+  if (localMl) {
+    lines.push(`<p class="advisor-sub">${t.localMlSample}</p>`);
+    lines.push('<div class="advisor-scroll"><table class="advisor-table">');
+    lines.push(
+      `<thead><tr><th scope="col">${t.localMlHeaders[0]}</th><th scope="col">${t.localMlHeaders[1]}</th></tr></thead>`,
+    );
+    lines.push(
+      `<tbody><tr><td>${fmtPct(localMl.criticalPreservedPct)} (${localMl.criticalKept}/${localMl.criticalTotal})</td><td>${localMl.protectedRegionViolations}/${localMl.protectedRegions}</td></tr></tbody>`,
+    );
+    lines.push('</table></div>');
+  } else {
+    lines.push(`<p class="advisor-sub">${t.localMlSkipped}</p>`);
+  }
+
   return lines.join('\n');
 }
 
@@ -545,18 +659,24 @@ async function main(): Promise<void> {
 
   const groupResults: GroupResult[] = [];
   let aiCorpus: CorpusEntry[] = [];
+  let localMlCorpus: CorpusEntry[] = [];
   for (const group of CORPUS_GROUPS) {
     const corpus = loadCorpus(group.dirs);
     console.log(`Running bench on "${group.title}" (${corpus.length} prompts)…`);
     const fast = await benchFastMode(corpus);
     groupResults.push({ group, corpusSize: corpus.length, fast });
     if (group.id === AI_SAMPLE_GROUP) aiCorpus = corpus;
+    if (group.id === LOCAL_ML_SAMPLE_GROUP) localMlCorpus = corpus;
   }
 
   const ai = await benchAiMode(aiCorpus);
-  const markdown = renderMarkdown(today, groupResults, ai);
-  const html = renderHtml(today, groupResults, ai, 'en');
-  const htmlEs = renderHtml(today, groupResults, ai, 'es');
+  if (process.env.LOCAL_ML_BENCH) {
+    console.log('LOCAL_ML_BENCH=1: downloading the real TinyBERT model and measuring it…');
+  }
+  const localMl = await benchLocalMl(localMlCorpus);
+  const markdown = renderMarkdown(today, groupResults, ai, localMl);
+  const html = renderHtml(today, groupResults, ai, localMl, 'en');
+  const htmlEs = renderHtml(today, groupResults, ai, localMl, 'es');
 
   const resultsDir = join(ROOT, 'bench', 'results');
   mkdirSync(resultsDir, { recursive: true });
@@ -572,6 +692,7 @@ async function main(): Promise<void> {
           fast: g.fast,
         })),
         ai,
+        localMl,
       },
       null,
       2,
@@ -627,6 +748,21 @@ async function main(): Promise<void> {
   }
   if (ai.skipped.length) {
     console.log(`AI mode skipped for: ${[...new Set(ai.skipped.map((s) => s.label))].join(', ')}`);
+  }
+  if (localMl) {
+    console.log(
+      `Local ML: ${fmtPct(localMl.criticalPreservedPct)} critical constraints preserved, ${localMl.protectedRegionViolations}/${localMl.protectedRegions} protected-region violations`,
+    );
+    // Unlike AI mode's critical-preserved rate (a real model's judgment, no
+    // hard floor expected), 0 protected-region violations is a structural
+    // guarantee of `compressProtectedAware` (docs/PLAN.md Phase 8 task 2),
+    // not a quality metric — a violation here means the wrapper has a bug.
+    if (localMl.protectedRegionViolations > 0) {
+      console.error('FAIL: Local ML mode touched a protected region. See docs/PLAN.md Phase 8.');
+      process.exitCode = 1;
+    }
+  } else {
+    console.log('Local ML mode skipped (set LOCAL_ML_BENCH=1 to measure it for real).');
   }
 
   console.log(

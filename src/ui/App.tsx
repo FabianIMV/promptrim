@@ -55,15 +55,22 @@ import {
   setRemembering,
 } from '../providers';
 import type { AiCostEstimate, AiStep, AiVerdict, ProviderId } from '../providers';
+import { runLocalMlCompression } from '../local-ml';
+import type { LocalMlProgress } from '../local-ml';
 import { AiPanel } from './AiPanel';
 import { BatchView } from './BatchView';
 import type { BatchRow } from './BatchView';
 import { CostAdvisor } from './CostAdvisor';
 import { DiffView } from './DiffView';
 import { LedgerPanel } from './LedgerPanel';
+import { LocalMlPanel } from './LocalMlPanel';
 import { RulesPanel } from './RulesPanel';
 
-const AI_MODE_STORAGE_KEY = 'promptrim.aiMode';
+export type CompressionMode = 'fast' | 'ai' | 'local-ml';
+
+const MODE_STORAGE_KEY = 'promptrim.mode';
+/** Legacy key from before Phase 8 added a third mode; read once for migration. */
+const LEGACY_AI_MODE_STORAGE_KEY = 'promptrim.aiMode';
 const DISABLED_RULES_STORAGE_KEY = 'promptrim.disabledRules';
 const DEFAULT_MODEL_ID = 'claude-sonnet-5';
 const DEFAULT_CALLS_PER_DAY = 1000;
@@ -131,7 +138,8 @@ export function App() {
   const [input, setInput] = useState('');
   const [output, setOutput] = useState('');
   const [level, setLevel] = useState<Level>('balanced');
-  const [aiMode, setAiMode] = useState(false);
+  const [mode, setMode] = useState<CompressionMode>('fast');
+  const [localMlProgress, setLocalMlProgress] = useState<LocalMlProgress | null>(null);
   const [providerId, setProviderId] = useState<ProviderId>(DEFAULT_PROVIDER_ID);
   const [apiKeys, setApiKeys] = useState<Partial<Record<ProviderId, string>>>({});
   const [remember, setRemember] = useState(false);
@@ -172,6 +180,8 @@ export function App() {
 
   const provider = getProvider(providerId) ?? PROVIDERS[0]!;
   const apiKey = apiKeys[providerId] ?? '';
+  const aiMode = mode === 'ai';
+  const localMlMode = mode === 'local-ml';
   const targetModel = useMemo(() => getModel(targetModelId) ?? allModels()[0]!, [targetModelId]);
   /**
    * Token counting can use the user's key, but only the one belonging to the
@@ -187,7 +197,12 @@ export function App() {
 
   useEffect(() => {
     try {
-      if (localStorage.getItem(AI_MODE_STORAGE_KEY) === 'true') setAiMode(true);
+      const storedMode = localStorage.getItem(MODE_STORAGE_KEY);
+      if (storedMode === 'fast' || storedMode === 'ai' || storedMode === 'local-ml') {
+        setMode(storedMode);
+      } else if (localStorage.getItem(LEGACY_AI_MODE_STORAGE_KEY) === 'true') {
+        setMode('ai');
+      }
       const stored = localStorage.getItem(DISABLED_RULES_STORAGE_KEY);
       if (stored) setDisabledRuleIds(new Set(JSON.parse(stored) as string[]));
     } catch {
@@ -231,7 +246,7 @@ export function App() {
 
   /** What the pipeline itself would cost, shown before the user runs it. */
   useEffect(() => {
-    if (!aiMode || !input.trim()) {
+    if (mode !== 'ai' || !input.trim()) {
       setAiEstimate(null);
       return;
     }
@@ -275,11 +290,13 @@ export function App() {
     const source = run.source;
     const split = splitPrompt(source);
     const dynamicText = split.reorderedSuffix;
-    // Fast mode can compress the dynamic slice for real; AI mode cannot (the
-    // provider only returned one string), so its share is scaled instead.
-    const compressedDynamicText = aiMode
-      ? null
-      : compress(dynamicText, level, { disabledRuleIds: [...disabledRuleIds] }).output;
+    // Fast mode can compress the dynamic slice for real; AI and Local ML mode
+    // cannot (they only return one string from an async model call), so their
+    // share is scaled instead.
+    const compressedDynamicText =
+      mode === 'fast'
+        ? compress(dynamicText, level, { disabledRuleIds: [...disabledRuleIds] }).output
+        : null;
 
     let cancelled = false;
     void (async () => {
@@ -311,7 +328,7 @@ export function App() {
   }, [
     run,
     output,
-    aiMode,
+    mode,
     level,
     disabledRuleIds,
     targetModel,
@@ -342,14 +359,14 @@ export function App() {
     showToast('✓ Copied to clipboard!');
   }, [cacheReady, showToast]);
 
-  const onToggleAi = useCallback((next: boolean) => {
-    setAiMode(next);
+  const onModeChange = useCallback((next: CompressionMode) => {
+    setMode(next);
     try {
-      localStorage.setItem(AI_MODE_STORAGE_KEY, String(next));
+      localStorage.setItem(MODE_STORAGE_KEY, next);
     } catch {
       // Ignore storage failures; the toggle still works for this session.
     }
-    if (next) queueMicrotask(() => apiKeyRef.current?.focus());
+    if (next === 'ai') queueMicrotask(() => apiKeyRef.current?.focus());
   }, []);
 
   const onProviderChange = useCallback((id: ProviderId) => {
@@ -389,6 +406,7 @@ export function App() {
     setAiOutcome(null);
     setCacheReady(null);
     setDisabledChangeKeys(new Set());
+    setLocalMlProgress(null);
   }, []);
 
   /** Token savings of `result` against `source`, recomputed after a restore. */
@@ -489,16 +507,16 @@ export function App() {
     }
     if (aiMode && !apiKey) {
       setError(
-        `Enter your ${provider.keyLabel} above, or uncheck "AI mode" to compress locally with Fast mode.`,
+        `Enter your ${provider.keyLabel} above, or switch to Fast mode to compress locally.`,
       );
       return;
     }
 
     const batchPrompts = splitBatch(text);
     if (batchPrompts.length > 1) {
-      if (aiMode) {
+      if (mode !== 'fast') {
         setError(
-          'Batch mode runs in Fast mode only — uncheck "AI mode" to compress several prompts at once.',
+          'Batch mode runs in Fast mode only — switch to Fast mode to compress several prompts at once.',
         );
         return;
       }
@@ -512,6 +530,7 @@ export function App() {
       setAiOutcome(null);
       setCacheReady(null);
       setDisabledChangeKeys(new Set());
+      setLocalMlProgress(null);
       setBusy(true);
 
       try {
@@ -565,6 +584,7 @@ export function App() {
     setAiOutcome(null);
     setCacheReady(null);
     setDisabledChangeKeys(new Set());
+    setLocalMlProgress(null);
     setBusy(true);
 
     try {
@@ -594,6 +614,19 @@ export function App() {
           calls: aiRun.calls,
           spentUsd: spentUsd(aiRun.usage, compressModel),
         });
+      } else if (localMlMode) {
+        setAiSteps(null);
+        const localRun = await runLocalMlCompression(text, {
+          level,
+          onProgress: setLocalMlProgress,
+        });
+        result = localRun.output;
+        nextRun = { ...nextRun, constraints: localRun.constraints };
+        nextLedger = {
+          constraints: localRun.constraints,
+          report: localRun.report,
+          duplicates: localRun.duplicates,
+        };
       } else {
         setAiSteps(null);
         const compressed = compress(text, level, { disabledRuleIds: [...disabledRuleIds] });
@@ -619,9 +652,9 @@ export function App() {
       const saved = await refreshSavings(text, result);
       if (!saved) {
         setError(
-          aiMode
-            ? 'The model could not make this prompt shorter without losing constraints.'
-            : 'This prompt is already concise — minimal savings in Fast mode. Try AI mode or Aggressive level for more compression.',
+          mode === 'fast'
+            ? 'This prompt is already concise — minimal savings in Fast mode. Try AI mode or Aggressive level for more compression.'
+            : 'The model could not make this prompt shorter without losing constraints.',
         );
       }
     } catch (err) {
@@ -630,7 +663,9 @@ export function App() {
       setBusy(false);
     }
   }, [
+    mode,
     aiMode,
+    localMlMode,
     apiKey,
     provider,
     compressModel,
@@ -685,6 +720,7 @@ export function App() {
     setAiOutcome(null);
     setCacheReady(null);
     setDisabledChangeKeys(new Set());
+    setLocalMlProgress(null);
   }, []);
 
   const onShare = useCallback(async () => {
@@ -749,14 +785,32 @@ export function App() {
           ))}
         </div>
 
-        <label class="api-toggle">
-          <input
-            type="checkbox"
-            checked={aiMode}
-            onChange={(e) => onToggleAi((e.currentTarget as HTMLInputElement).checked)}
-          />
-          AI mode (Anthropic · OpenAI · Gemini)
-        </label>
+        <div class="mode-group" role="radiogroup" aria-label="Compression mode">
+          <button
+            type="button"
+            class={`mode-btn${mode === 'fast' ? ' active' : ''}`}
+            aria-pressed={mode === 'fast'}
+            onClick={() => onModeChange('fast')}
+          >
+            Fast
+          </button>
+          <button
+            type="button"
+            class={`mode-btn${mode === 'ai' ? ' active' : ''}`}
+            aria-pressed={mode === 'ai'}
+            onClick={() => onModeChange('ai')}
+          >
+            AI (Anthropic · OpenAI · Gemini)
+          </button>
+          <button
+            type="button"
+            class={`mode-btn${mode === 'local-ml' ? ' active' : ''}`}
+            aria-pressed={mode === 'local-ml'}
+            onClick={() => onModeChange('local-ml')}
+          >
+            Local ML <span class="experimental-badge">Experimental</span>
+          </button>
+        </div>
 
         <RulesPanel disabledRuleIds={disabledRuleIds} onToggle={onToggleRuleEnabled} />
       </div>
@@ -836,6 +890,8 @@ export function App() {
         />
       )}
 
+      {localMlMode && <LocalMlPanel progress={localMlProgress} />}
+
       <div class={`savings${savings ? ' visible' : ''}`}>
         <div class="savings-title">Compression results</div>
         <div class="savings-row">
@@ -856,7 +912,7 @@ export function App() {
             <div class="saving-label">saved / month @ {callsPerDay.toLocaleString()}/day</div>
           </div>
         </div>
-        {savings && !aiMode && run && (
+        {savings && mode === 'fast' && run && (
           <div class="savings-note">
             {run.changes.length} rule change{run.changes.length === 1 ? '' : 's'} ·{' '}
             {run.protectedRegions} protected region
@@ -868,6 +924,12 @@ export function App() {
             {aiOutcome.calls} API call{aiOutcome.calls === 1 ? '' : 's'} · {aiOutcome.repairs}{' '}
             repair{aiOutcome.repairs === 1 ? '' : 's'}
             {aiOutcome.spentUsd !== null ? ` · this run cost ${formatUsd(aiOutcome.spentUsd)}` : ''}
+          </div>
+        )}
+        {savings && localMlMode && (
+          <div class="savings-note">
+            Compressed on-device by a local model (experimental) · nothing you pasted left your
+            browser
           </div>
         )}
       </div>
@@ -894,7 +956,7 @@ export function App() {
         />
       )}
 
-      {run && !aiMode && (
+      {run && mode === 'fast' && (
         <DiffView
           original={run.source}
           changes={run.changes}

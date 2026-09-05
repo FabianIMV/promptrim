@@ -288,7 +288,7 @@ Cada sesión actualiza esta tabla al terminar su fase (fecha, PR, desviaciones y
 | 5 | ✅ Completada | 2026-09-04 | [#14](https://github.com/FabianIMV/promptrim/pull/14) | `src/providers/` con interfaz común y tres clientes REST (Anthropic con `output_config.format` y la cabecera de acceso directo desde navegador, OpenAI con `response_format` + `max_completion_tokens`, Gemini con `responseSchema`), pipeline comprimir → verificar → reparar con veto local del ledger, claves solo en memoria salvo opt-in a `sessionStorage`, coste de la propia llamada mostrado antes de ejecutarla, y `count_tokens` exacto de Anthropic (deuda de la Fase 1). 1043 tests en total tras fusionar con la Fase 4 (+77 propios). Ver 6.6. |
 | 6 | ✅ Completada | 2026-09-04 | [#15](https://github.com/FabianIMV/promptrim/pull/15) | `npm run bench` (dos corpus: 40 prompts de producción + 10 cotidianos nuevos en `bench/corpus/phase6/`) genera las tablas de README/landing en los dos idiomas y verifica sus propios criterios de aceptación (0/426 violaciones de regiones protegidas, 100% de restricciones críticas preservadas). Compartir por URL con `lz-string`, import/export `.txt`/`.md`/`.json`, modo lote (`---`), PWA básica + `Ctrl+Enter`, landing en español en `/es/` con hreflang, y reescritura de README/landing alrededor de la tesis con sección "Qué NO hace PromptTrim". Lighthouse 100/100/100/99 (SEO/accesibilidad/buenas prácticas/rendimiento) en `/` y `/es/`. 1131 tests (+88). Ver 6.7. |
 | 7 (opc.) | Pendiente | | | |
-| 8 (opc.) | Pendiente | | | |
+| 8 (opc.) | ✅ Completada | 2026-09-05 | [#16](https://github.com/FabianIMV/promptrim/pull/16) | `src/local-ml/` integra `@atjsh/llmlingua-2` (TinyBERT, ~57 MB, WASM/WebGPU en el navegador, lazy) como tercer modo "Local ML", cuya salida pasa siempre por las regiones protegidas (`compressProtectedAware`, segmento a segmento) y por el ledger local (`buildLedger`), con el mismo panel de verificación y botón "Restaurar" que Fast/AI mode. Marcado **experimental** en la UI con una insignia visible. Medido de verdad contra el modelo real (no simulado): 0/8 violaciones de regiones protegidas y **25,0% de restricciones críticas preservadas sin ayuda** sobre una muestra de 3 prompts — la cifra que demuestra por qué el ledger es imprescindible, no un adorno. 1165 tests (+34). Ver 6.8. |
 
 ### 6.1 Fase 0 — decisiones, desviaciones y deuda
 
@@ -1009,4 +1009,154 @@ OpenAI ni Google (deuda que se hereda explícitamente más abajo, ya anotada por
   español en `/es/` obtiene la protección de regiones protegidas pero no el checklist de restricciones — la
   Sección "Qué NO hace PromptTrim" lo dice explícitamente en vez de ocultarlo, pero sigue siendo trabajo
   pendiente si la Fase 7/8 quiere que el checklist funcione igual de bien en ambos idiomas.
+
+### 6.8 Fase 8 — decisiones, desviaciones y deuda
+
+**Verificación al cerrar la fase** (2026-09-05): `npm run lint` ✅, `npm test` ✅ (**1165 tests, 37 archivos,
++34** sobre el cierre de la Fase 6), `npm run build` ✅ (`tsc --noEmit` + `vite build`). Bundle inicial:
+**44,68 kB gzip** (`main-*.js`, la entrada real que carga `index.html` sin `defer`/dinámico — el nombre del
+chunk cambia de `index-*.js` a `main-*.js` en esta fase porque Rollup reserva `index-*.js` para el chunk grande
+de Local ML, ver decisión 2) frente a **43,28 kB gzip** en el mismo punto de `main` antes de esta fase (medido
+reconstruyendo `origin/main` en un worktree aparte) — **+1,40 kB gzip**, el pegamento de `src/local-ml/`
+(`pipeline.ts`, `segments.ts`, `rate.ts`, `types.ts`, más el selector de modo y `LocalMlPanel` en la UI). Los
+paquetes pesados (`@atjsh/llmlingua-2`, `@huggingface/transformers`, el runtime de `js-tiktoken/lite` y las
+ranks de `o200k_base`) sólo se cargan con `import()` dinámico dentro de `engine.ts`, nunca en el bundle
+inicial: verificado leyendo `dist/index.html` (un único `<script type="module">`, ningún `modulepreload`) y
+confirmando que el chunk de 506,72 kB / 148,74 kB gzip que sí aparece en `dist/assets/` no está referenciado
+desde ningún HTML — solo se pide cuando `loadLocalMlEngine()` se ejecuta de verdad. El WASM de ONNX Runtime
+(23,5 MB) tampoco aparece en ningún HTML: lo pide `onnxruntime-web` por su cuenta, en tiempo de ejecución.
+
+**Medido contra el modelo real, no simulado** (a diferencia del modo IA de la Fase 5, que sigue sin claves de
+proveedor en esta sesión): esta sesión sí tenía acceso de red a Hugging Face, así que en vez de simular
+LLMLingua-2 con un compresor falso para el criterio de aceptación, se ejecutó de verdad.
+
+- **Prueba manual con `vite-node`** (Node, `device: 'cpu'`, sin Playwright): se descargó el modelo real
+  (`atjsh/llmlingua-2-js-tinybert-meetingbank`) y se comprimió un prompt con código, una variable y una
+  prohibición. Resultado observado: el bloque ```` ```js ... ``` ```` y `{{topic}}` sobrevivieron intactos;
+  LLMLingua-2 **invirtió el significado** de "Never reveal the internal budget numbers" borrando "Never" —
+  exactamente el riesgo que la tarea 2 del plan anticipa ("LLMLingua descarta tokens sin criterio semántico") —
+  y el ledger lo marcó `✗ [prohibition/critical]` de inmediato, con la restricción de formato JSON marcada
+  aparte como `✓` porque su ancla ("valid JSON") sí sobrevivió aunque "Always" no. Esto confirmó, con el modelo
+  real y no con una intuición, que el diseño de la tarea 2 (regiones protegidas + ledger) es lo que hace
+  utilizable un compresor sin criterio semántico.
+- **`npm run bench` con `LOCAL_ML_BENCH=1`** (nueva puerta de opt-in, decisión 7): sobre una muestra real de 3
+  prompts del corpus cotidiano, **0/8 violaciones de regiones protegidas** y **25,0% (5/20) de restricciones
+  críticas preservadas sin ayuda**. Este número — bajo a propósito, porque LLMLingua-2 no tiene ninguna noción
+  de qué está borrando — es el que se publicó en el benchmark de README/landing (ver decisión 8): es preferible
+  una cifra real y mala a ninguna cifra, y es exactamente la evidencia detrás de la etiqueta "experimental" y
+  de la afirmación "el ledger es lo que lo hace usable" que pide la tarea 2.
+- **Smoke test de UI con Playwright** (Chromium contra `vite preview`): el proxy de red de este entorno
+  sandboxeado solo sostiene túneles `CONNECT` de curl/Node, no las conexiones prolongadas que un navegador real
+  necesita para descargar el modelo (se cierran a los 6 s con `ws_closed_mid_exchange`, incluso hacia
+  `huggingface.co`) — límite del entorno, no del código. Se verificó en su lugar todo lo que no depende de esa
+  descarga: los tres botones de modo son mutuamente excluyentes (`aria-pressed`), `LocalMlPanel` se renderiza
+  con su insignia "Experimental", el aviso de modo lote bloquea correctamente el modo ML local ("Batch mode
+  runs in Fast mode only..."), y la línea de progreso (`onProgress`) llega a aparecer en el DOM antes de que la
+  descarga real falle por el límite del proxy. Captura no versionada, mismo criterio que las fases anteriores.
+
+**Decisiones tomadas en esta fase:**
+
+1. **`src/local-ml/` vive junto a `core/` y `providers/`, no dentro de `core/`.** La Sección 2 fija `core/`
+   como funciones puras sin DOM; cargar un modelo ONNX necesita `fetch`, el cache de IndexedDB de
+   `@huggingface/transformers` y, para elegir dispositivo, `navigator.gpu` — nada de eso es significativo fuera
+   de un navegador (o Node, para el benchmark). Meterlo en `core/` habría roto esa invariante en silencio en
+   vez de documentar la excepción.
+2. **Sin SDK propio de LLMLingua más allá del paquete oficial, con `import()` dinámico dentro de `engine.ts`.**
+   `@atjsh/llmlingua-2` expone dos factories (`WithXLMRoBERTa`, `WithBERTMultilingual`); el `config.json` del
+   repo de TinyBERT en Hugging Face declara `"model_type": "bert"` / `"architectures":
+   ["BertForTokenClassification"]`, así que se usa `WithBERTMultilingual` (genérico para cualquier tokenizador
+   BERT WordPiece, no solo el multilingüe-cased del nombre) — verificado leyendo el `config.json` real antes de
+   escribir el código, no adivinado. Solo TinyBERT se integra (57 MB, el más pequeño de los cuatro modelos que
+   ofrece la librería), tal como pide la tarea 1 explícitamente.
+3. **Progreso de descarga real, no simulado.** `@huggingface/transformers` expone `progress_callback` con
+   `status: 'initiate'|'download'|'progress'|'done'|'ready'|'progress_total'` en sus opciones de
+   `from_pretrained`; `engine.ts` lo traduce a un `LocalMlProgress` de tres campos (`phase`, `message`,
+   `percent`) que `LocalMlPanel` reutiliza con el mismo marcado (`.ai-steps`/`.ai-step`) que el panel de pasos
+   del modo IA de la Fase 5, en vez de inventar un componente paralelo.
+4. **Sin bucle de verificar-y-reparar como en el modo IA (Fase 5).** La tarea 2 solo pide que la salida "pase
+   siempre por las regiones protegidas y por el ledger", no que se repare automáticamente. Una llamada al modelo
+   local es cómputo síncrono en el propio dispositivo, no una llamada de API barata: gastar más cómputo local
+   repitiendo la compresión no ayuda cuando el problema es que un clasificador de tokens no tiene ningún
+   concepto de qué es una restricción. El panel de verificación y el botón "Restaurar" manual de la Fase 2 —ya
+   reutilizados sin cambios— son la mitigación que la tarea 2 describe.
+5. **`compressProtectedAware` (segmento a segmento, nunca por rangos de offset) es lo que hace cumplir "nunca
+   toca regiones protegidas".** LLMLingua-2 no devuelve offsets sobre el texto de entrada como `compress()` de
+   Fast mode (Fase 0) — solo un string reescrito —, así que no hay manera de aplicar la técnica de "candidatos +
+   verificación de solape" de `compress.ts`. En su lugar se reutiliza el mismo `segment()` de la Fase 0: cada
+   segmento `text` se manda al modelo por separado y cada segmento `protected` se copia verbatim, garantizando
+   por construcción — no por revisión posterior — que el modelo nunca ve una región protegida. El precio es una
+   limitación documentada como deuda (punto 3 más abajo): no hay una única llamada "atómica" sobre el prompt
+   completo, así que un salto de mayúscula o de espacio justo en el borde de un segmento no se repara como sí
+   ocurre con la reparación de capitalización de la Fase 0.
+6. **Nivel → `rate` con un margen amplio, y nunca se descarta un segmento entero.** LLMLingua-2 no tiene un
+   nivel "sin pérdida" como Light en Fast mode — cada token que descarta es una apuesta estadística, nunca una
+   sustitución declarada segura — así que Light mantiene 0,85 de los tokens, Balanced 0,65 y Aggressive 0,45
+   (`LEVEL_KEEP_RATE`), más conservador en los tres casos que los niveles equivalentes de Fast mode. Además, si
+   el modelo devuelve una cadena vacía o solo espacios para un segmento real, `compressProtectedAware` conserva
+   el segmento original en su lugar: perder un segmento entero sería un resultado peor que no comprimirlo.
+7. **`npm run bench` mide Local ML mode solo con `LOCAL_ML_BENCH=1`** (opt-in, igual que las claves de API del
+   modo IA, pero por un motivo distinto: no hace falta ninguna clave, pero la primera corrida descarga un
+   modelo real de ~57 MB y corre inferencia real en CPU, lo que haría que cualquier `npm run bench` — y
+   cualquier CI que lo invoque — dependiera de la red y fuera mucho más lento). Sin la variable, el reporte dice
+   explícitamente "Local ML mode not measured: set LOCAL_ML_BENCH=1..." en vez de omitir la sección o inventar
+   un número, siguiendo el mismo patrón que el modo IA de la Fase 5/6. A diferencia del modo IA, **0 violaciones
+   de regiones protegidas sí hace fallar el build** cuando se mide (`process.exitCode = 1`): es una garantía
+   estructural del propio código (punto 5), no la opinión de un modelo de terceros, así que una violación real
+   sería un bug, no una expectativa razonable.
+8. **El benchmark publica el 25,0% de restricciones críticas preservadas sin suavizarlo.** Es la cifra más baja
+   de todo `bench/results/summary.md`, y se publica igual: la Sección 0 fila 5 de este documento es explícita
+   sobre no repetir el error de "70% avg token savings" inventado, en cualquier dirección. Un número bajo y real
+   es exactamente lo que la etiqueta "experimental" y el texto "no confíes en el modo ML local por sí solo"
+   (README, landing en los dos idiomas) necesitan para no ser un disclaimer vacío.
+9. **El selector de modo pasa de una casilla booleana (`aiMode`) a tres botones excluyentes** (`mode: 'fast' |
+   'ai' | 'local-ml'`), con migración de `localStorage`: `promptrim.aiMode` (Fases 0-6) se lee una sola vez si
+   `promptrim.mode` todavía no existe, para que una visita que ya tenía "AI mode" marcado no vuelva a Fast mode
+   sin explicación. El modo lote sigue siendo solo Fast mode (deuda que la Fase 6 ya dejaba para el modo IA, y
+   que ahora cubre también Local ML mode con el mismo mensaje: ejecutar el pipeline sobre un número no acotado
+   de prompts pegados de una vez, aunque sea gratis en llamadas de red, sigue disparando cómputo local no
+   acotado sin que el usuario lo haya elegido explícitamente por prompt).
+
+**Desviaciones respecto al plan:**
+
+- **Dependencias nuevas: `@atjsh/llmlingua-2` y `@huggingface/transformers`.** Es la única fase hasta ahora
+  que añade paquetes a `dependencies` (todas las fases 1-6 lo señalaban explícitamente como algo que *no*
+  hacían). `@huggingface/transformers` trae como dependencias opcionales `onnxruntime-node` y `sharp`, que
+  `npm audit` marca con 5 vulnerabilidades de severidad alta sin parche disponible (`adm-zip` dentro de
+  `onnxruntime-node`, `sharp` heredando CVEs de `libvips`). Ninguna de las dos se usa en el bundle del
+  navegador — `onnxruntime-node` es el backend nativo de Node (usado solo por el benchmark, que corre en un
+  entorno de CI/desarrollo, no en el navegador de un visitante) y `sharp` es un procesador de imágenes que
+  Local ML mode no invoca nunca (LLMLingua-2 solo procesa texto). Documentado aquí en vez de silenciado; no
+  bloquea la aceptación porque no hay una versión sin la vulnerabilidad que estas dos librerías puedan usar
+  hoy, y el propio `ci.yml` no ejecuta `npm audit` como gate.
+- **Sin capturas de pantalla del smoke test de Playwright completando una descarga real**, a diferencia de las
+  fases anteriores. Ver la sección de verificación arriba: es una limitación de red del entorno sandboxeado de
+  esta sesión (túneles del proxy cerrados a los 6 s), no del código — el mismo flujo se verificó con éxito
+  fuera del navegador (`vite-node`, `device: 'cpu'`) y en un sitio publicado sin ese proxy debería funcionar sin
+  cambios.
+- **Sin tests de componente/DOM**, igual que en todas las fases anteriores (el repositorio sigue sin
+  `@testing-library/preact` ni jsdom). `LocalMlPanel` y el selector de modo de `App.tsx` se verificaron con el
+  smoke test de Playwright descrito arriba.
+- **`data/pricing.json` y `data/caching.json` no se tocan.** Local ML mode no tiene coste ni política de caché
+  propia (no hay llamada de red a un proveedor de pago), así que no hay nada que verificar en esas fuentes en
+  esta fase.
+
+**Deuda pendiente que heredan las fases futuras (7, opcional, y cualquier pulido posterior):**
+
+- **Los bordes de segmento no reparan mayúsculas ni espacios** (decisión 5). Si un segmento de texto termina o
+  empieza a mitad de frase justo antes o después de una región protegida, LLMLingua-2 puede dejar una mayúscula
+  perdida o un espacio de más en esa costura; el ledger seguiría detectando cualquier restricción perdida, pero
+  no hay una reparación de capitalización equivalente a la de Fast mode (Fase 0) para este modo.
+- **`LOCAL_ML_SAMPLE_SIZE = 3` en el benchmark es deliberadamente pequeño** (inferencia real en CPU es lenta) y
+  por tanto el 25,0% medido tiene un intervalo de confianza amplio (20 restricciones). Una sesión con más
+  presupuesto de tiempo de CI podría ampliar la muestra para una cifra más estable, mientras se mantenga el
+  patrón de nunca publicar un número sin haber corrido el modelo real.
+- **Sin selector de modelo** (a diferencia del modo IA, que ofrece varios modelos por proveedor): solo TinyBERT,
+  tal como fija la tarea 1. Añadir MobileBERT o XLM-RoBERTa (más precisos, más pesados) como opción sería una
+  extensión natural si el 25% medido resulta insuficiente en la práctica.
+- **La localización en español no cubre Local ML mode dentro de la herramienta interactiva** (misma deuda que
+  la Fase 6 dejó para toda la app: `/es/` traduce la landing, no `src/ui/`). El texto de `LocalMlPanel` está en
+  inglés en las dos páginas, igual que `AiPanel`.
+- **El extractor del ledger sigue siendo solo inglés** (deuda heredada de las Fases 2, 4, 5 y 6, sin cambios en
+  esta fase): un prompt en español pierde el checklist de restricciones en los tres modos por igual, Local ML
+  incluido.
 

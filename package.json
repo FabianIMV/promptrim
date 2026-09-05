@@ -17,6 +17,8 @@
     "bench": "vite-node bench/run.ts"
   },
   "dependencies": {
+    "@atjsh/llmlingua-2": "^3.0.0",
+    "@huggingface/transformers": "^4.2.0",
     "js-tiktoken": "^1.0.21",
     "lz-string": "^1.5.0",
     "preact": "^10.27.2"
